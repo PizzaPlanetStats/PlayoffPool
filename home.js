@@ -15,7 +15,7 @@ let loadedFor = null;
 
 function showSignInMessage()
 {
-    teamsStatus.textContent = "Only signed in teams can see the league. ";
+    teamsStatus.textContent = "Only signed-in teams can see the league. ";
 
     const link = document.createElement("a");
     link.href = "signin.html";
@@ -79,6 +79,11 @@ function renderTeams(teams, user)
 
         const nameCell = document.createElement("td");
 
+        // one flex row per team so the logo and name are centered on each other
+        const teamRow = document.createElement("div");
+        teamRow.className = "team-row";
+        nameCell.appendChild(teamRow);
+
         // logo box keeps team names lined up, even for teams with no logo
         const logoBox = document.createElement("span");
         logoBox.className = "thumb-box";
@@ -92,18 +97,21 @@ function renderTeams(teams, user)
         });
         logo.src = encodeURIComponent(team.id) + ".png";
         logoBox.appendChild(logo);
-        nameCell.appendChild(logoBox);
+        teamRow.appendChild(logoBox);
 
+        const nameText = document.createElement("span");
         const link = document.createElement("a");
         link.href = "user.html?id=" + encodeURIComponent(team.id);
         link.textContent = team.name;
-        nameCell.appendChild(link);
+        nameText.appendChild(link);
 
         // mark the signed-in team's own row
         if (user && user.uid === team.id)
         {
-            nameCell.appendChild(document.createTextNode(" (you)"));
+            nameText.appendChild(document.createTextNode(" (you)"));
         }
+
+        teamRow.appendChild(nameText);
 
         row.append(nameCell);
         teamsBody.appendChild(row);

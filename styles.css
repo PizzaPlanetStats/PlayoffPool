@@ -396,19 +396,25 @@ table.stats tr:nth-child(even) td { background: #eef; }
 #nav a.hidden { display: none; }
 
 /* small team logo in the home page team list */
+.team-row {
+  display: flex;
+  align-items: center;
+}
+
 .thumb-box {
-  display: inline-block;
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 36px;
   height: 36px;
   margin-right: 8px;
-  vertical-align: middle;
-  text-align: center;
 }
 
 .thumb-box img {
+  display: block;
   max-width: 100%;
   max-height: 100%;
   width: auto;
   height: auto;
-  vertical-align: middle;
 }
