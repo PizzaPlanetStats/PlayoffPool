@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin Home - Pizza Planet</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="page">
+
+  <div id="banner">
+    <h1><img src="logo.png" alt="Pizza Planet"></h1>
+    <h2>Admin Home</h2>
+  </div>
+
+  <div id="nav">
+    <a href="index.html">Home</a>
+    <a href="standings.html">Standings</a>
+    <a href="history.html">Past Years</a>
+    <a href="rules.html">Rules</a>
+    <a href="signin.html" id="auth-link">Sign In</a>
+  </div>
+
+  <div id="content">
+    <p id="checking">Checking login...</p>
+
+    <div id="admin-area" class="hidden">
+      <div class="box team-card">
+        <h2 class="team-name">Hello, Jack</h2>
+      </div>
+
+      <div class="box">
+        <button type="button" id="logout" class="btn">Log out</button>
+      </div>
+
+      <div class="box">
+        <h3>Teams (<span id="team-count">0</span>)</h3>
+        <p id="teams-status">Loading teams...</p>
+        <div class="scroll">
+          <table class="stats hidden" id="teams-table">
+            <thead>
+              <tr>
+                <th>Team</th>
+                <th class="col-id">Team ID</th>
+                <th>Joined</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
+            <tbody id="teams-body"></tbody>
+          </table>
+        </div>
+        <p id="teams-message" class="error" role="alert"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">
+    PizzaPlanetStats&trade;
+  </div>
+
+</div>
+<script src="stars.js"></script>
+<script type="module" src="nav.js"></script>
+<script type="module" src="adminHome.js"></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pizza Planet NHL Playoff Pool</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="page">
+
+  <div id="banner">
+    <h1><img src="logo.png" alt="Pizza Planet"></h1>
+    <h2>Pizza Planet Playoff Pool</h2>
+  </div>
+
+  <div id="nav">
+    <a href="index.html">Home</a>
+    <a href="standings.html">Standings</a>
+    <a href="history.html">Past Years</a>
+    <a href="rules.html">Rules</a>
+    <a href="signin.html" id="auth-link">Sign In</a>
+  </div>
+
+  <div id="content">
+    <div class="box">
+      <h3>Hello World!</h3>
+      <p>Welcome to the NEW Pizza Planet playoff pool website. This website is not ready yet, but please create your team here so I can begin the process of adding all the stats from previous years. Have a WONDERFUL WEDNESDAY.</p>
+      <p id="signup-prompt"><a class="btn" href="signup.html">Sign Up</a></p>
+    </div>
+    <div class="box">
+      <h3>Teams</h3>
+      <p id="teams-status">Loading teams...</p>
+      <div class="scroll">
+        <table class="stats hidden" id="teams-table">
+          <thead>
+            <tr>
+              <th>Team</th>
+            </tr>
+          </thead>
+          <tbody id="teams-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">
+    PizzaPlanetStats&trade;
+  </div>
+
+</div>
+<script src="stars.js"></script>
+<script type="module" src="nav.js"></script>
+<script type="module" src="home.js"></script>
+</body>
+</html>

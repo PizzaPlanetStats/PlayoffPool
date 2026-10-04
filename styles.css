@@ -1,0 +1,414 @@
+/* Pizza Planet - shared styles for every page */
+
+:root {
+  --navy: #000066;
+  --navy-dark: #000033;
+  --orange: #ff6a1a;
+  --orange-dark: #8a3000;
+  --lime: #66ee22;
+  --lime-dark: #2f8f0a;
+  --gold: #ffcc33;
+}
+
+html, body {
+  overflow-x: hidden; /* shooting stars fly past the edge of the screen */
+}
+
+body {
+  margin: 0;
+  padding: 12px;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: linear-gradient(to right, #09162a, #0d284d, #113b72, #194f99);
+  font-family: "Times New Roman", Times, serif;
+  font-size: 17px;
+  color: #000;
+}
+
+#page {
+  position: relative;
+  z-index: 2; /* keeps the page in front of the stars */
+  max-width: 760px;
+  margin: 0 auto;
+  background: #fff;
+  border: 4px ridge var(--orange);
+}
+
+/* Banner */
+#banner {
+  background: var(--navy-dark);
+  color: #fff;
+  text-align: center;
+  padding: 14px 10px;
+  border-bottom: 4px ridge var(--orange);
+}
+
+#banner h1 {
+  margin: 0;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 38px;
+  letter-spacing: 2px;
+  color: var(--lime);
+  text-shadow: 3px 3px 0 var(--orange);
+}
+
+#banner img {
+  max-width: 100%;
+  height: auto;
+  max-height: 170px;
+}
+
+#banner h2 {
+  margin: 6px 0 0;
+  color: var(--lime);
+  font-style: italic;
+}
+
+/* Navigation bar */
+#nav {
+  background: var(--orange);
+  text-align: center;
+  padding: 6px;
+  border-bottom: 2px solid var(--orange-dark);
+}
+
+#nav a {
+  display: inline-block;
+  margin: 2px;
+  padding: 3px 12px;
+  background: #ddd;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  text-decoration: none;
+  border: 2px outset #fff;
+}
+
+#nav a:visited { color: #000; }
+#nav a:hover, #nav a:focus { background: var(--lime); }
+#nav a:active { border-style: inset; }
+
+/* Content */
+#content { padding: 14px 18px; }
+
+.box { margin-bottom: 20px; }
+
+h3 {
+  margin: 0 0 6px;
+  padding: 2px 8px;
+  background: var(--navy);
+  color: var(--lime);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+}
+
+a { color: #0000ee; }
+a:visited { color: #551a8b; }
+a:focus { outline: 2px solid var(--orange); }
+
+/* Login box */
+#login-box {
+  background: #f0ffe0;
+  border: 2px groove var(--orange);
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.btn {
+  display: inline-block;
+  margin: 6px 0;
+  padding: 6px 28px;
+  background: var(--lime);
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: bold;
+  text-decoration: none;
+  border: 3px outset #b8ff94;
+}
+
+.btn:visited { color: #000; }
+.btn:hover, .btn:focus { background: var(--gold); }
+.btn:active { border-style: inset; }
+
+/* Footer */
+#footer {
+  background: var(--navy-dark);
+  color: #fff;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+  border-top: 4px ridge var(--orange);
+}
+
+#footer a, #footer a:visited { color: var(--lime); }
+
+@media (max-width: 480px) {
+  #banner h1 { font-size: 28px; }
+  #content { padding: 10px; }
+}
+
+/* background star effect*/
+.backgroundStar 
+{
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background-color: white;
+    opacity: 0.7;
+    animation: twinkling 5s infinite;
+    z-index: 1;
+}
+
+@keyframes twinkling 
+{
+    0% 
+    {
+        opacity: 0.7;
+    }
+    50% 
+    {
+        opacity: 0.1;
+    }
+    100% 
+    {
+        opacity: 0.7;
+    }
+}
+
+/* shooting star effect */
+.shootingStar 
+{
+    position: absolute;
+    width: 150px;
+    height: 2px;
+    border-radius: 50%;
+    opacity: 0.8;
+    transform-origin: left center;
+    z-index: 1;
+}
+
+.shootingStar.left 
+{
+    background: linear-gradient(90deg, white, rgba(255, 255, 255, 0));
+}
+
+.shootingStar.right 
+{
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), white);
+}
+
+@keyframes shootingLeft 
+{
+    0% 
+    {
+        opacity: 1;
+        transform: translate(0, 0) rotate(-35deg);
+    }
+    100% 
+    {
+        opacity: 0;
+        transform: translate(-1000px, 1000px) rotate(-30deg);
+    }
+}
+
+@keyframes shootingRight 
+{
+    0% 
+    {
+        opacity: 1;
+        transform: translate(0, 0) rotate(35deg);
+    }
+    100% 
+    {
+        opacity: 0;
+        transform: translate(1000px, 1000px) rotate(30deg);
+    }
+}
+
+/* respect "reduce motion" settings: stars stay still, no shooting stars */
+@media (prefers-reduced-motion: reduce)
+{
+    .backgroundStar 
+    {
+        animation: none;
+    }
+}
+
+/* forms and admin pages */
+.hidden { display: none; }
+
+form.simple { text-align: left; max-width: 360px; margin: 0 auto; }
+
+form.simple label {
+  display: block;
+  margin-top: 10px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+form.simple input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 3px;
+  padding: 6px;
+  font-size: 16px;
+  font-family: Arial, Helvetica, sans-serif;
+  border: 2px inset #999;
+}
+
+form.simple input:focus { outline: 2px solid var(--orange); }
+
+.error {
+  min-height: 1.4em;
+  margin: 10px 0 0;
+  color: #b00000;
+  font-weight: bold;
+}
+
+button.btn { cursor: pointer; }
+button.btn:disabled { opacity: 0.6; cursor: wait; }
+
+/* sign in, sign up, profile */
+.fine { text-align: center; font-size: 15px; margin: 10px 0 0; }
+#message:not(.error), #pw-message:not(.error) { color: #1a6e00; font-weight: bold; }
+
+/* team profile header */
+.team-card {
+  background: var(--navy-dark);
+  border: 4px ridge var(--orange);
+  color: #fff;
+  text-align: center;
+  padding: 18px 12px;
+}
+
+.team-logo {
+  display: block;
+  margin: 0 auto 14px;
+  max-width: 200px;
+  max-height: 200px;
+  width: auto;
+  height: auto;
+}
+
+.team-logo.hidden { display: none; }
+
+.team-name {
+  margin: 0;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 34px;
+  letter-spacing: 2px;
+  color: var(--lime);
+  overflow-wrap: anywhere;
+}
+
+.team-sub {
+  margin: 10px 0 0;
+  font-style: italic;
+  font-size: 15px;
+}
+
+#page hr {
+  border: 0;
+  border-top: 2px groove var(--orange);
+  margin: 16px 0;
+}
+
+@media (max-width: 480px) {
+  .team-name { font-size: 26px; }
+}
+
+/* account settings: section titles, buttons close to their fields */
+.sub-title {
+  margin: 0 0 4px;
+  padding-bottom: 3px;
+  border-bottom: 2px solid var(--orange);
+  color: var(--navy);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 24px;
+}
+
+#own-area form.simple .btn { margin-top: 14px; }
+
+#own-area .error {
+  margin: 6px 0 0;
+  min-height: 0;
+}
+
+#own-area .error:empty { display: none; }
+
+/* tables (admin team list, later standings) */
+.scroll { overflow-x: auto; }
+
+table.stats {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+}
+
+table.stats th,
+table.stats td {
+  border: 1px solid #000;
+  padding: 4px 8px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+table.stats th {
+  background: var(--navy);
+  color: var(--lime);
+}
+table.stats tr:nth-child(even) td { background: #eef; }
+
+.id-cell {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.btn.small {
+  margin: 0;
+  padding: 2px 10px;
+  font-size: 14px;
+  border-width: 2px;
+  background: var(--orange);
+  border-color: #ffb27f;
+}
+
+.btn.small:hover,
+.btn.small:focus { background: var(--gold); }
+
+#teams-message:not(.error) { color: #1a6e00; font-weight: bold; }
+
+@media (max-width: 600px) {
+  .col-id { display: none; }
+}
+
+/* admin shortcut in the nav bar (only shown to the admin) */
+#nav a.admin-link { background: var(--lime); }
+#nav a.admin-link:hover,
+#nav a.admin-link:focus { background: var(--gold); }
+
+/* lets a nav button be hidden (the nav rule above would otherwise win) */
+#nav a.hidden { display: none; }
+
+/* small team logo in the home page team list */
+.thumb-box {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  margin-right: 8px;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.thumb-box img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  vertical-align: middle;
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team - Pizza Planet</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="page">
+
+  <div id="banner">
+    <h1><img src="logo.png" alt="Pizza Planet"></h1>
+    <h2>Team Profile</h2>
+  </div>
+
+  <div id="nav">
+    <a href="index.html">Home</a>
+    <a href="standings.html">Standings</a>
+    <a href="history.html">Past Years</a>
+    <a href="rules.html">Rules</a>
+    <a href="signin.html" id="auth-link">Sign In</a>
+  </div>
+
+  <div id="content">
+    <p id="status">Loading team...</p>
+
+    <div id="profile" class="hidden">
+        <div class="box team-card">
+            <img id="team-logo" class="team-logo hidden" alt="">
+            <h2 id="team-name" class="team-name"></h2>
+        </div>
+
+        <div class="box">
+            <h3>My Seasons</h3>
+            <p>WIP</p>
+        </div>
+
+        <div class="box">
+            <h3>All Time Stats</h3>
+            <p>WIP</p>
+        </div>
+
+        <div class="box">
+            <h3>Achievements</h3>
+            <p>WIP</p>
+        </div>
+
+        <div id="own-area" class="box hidden">
+            <h3>Account Settings</h3>
+            <div id="login-box">
+            <form id="rename-form" class="simple" novalidate>
+                <h4 class="sub-title">Change Team Name</h4>
+                <label for="new-name">Team name</label>
+                <input type="text" id="new-name" maxlength="30" autocomplete="off">
+                <button type="submit" id="rename" class="btn">Save Name</button>
+                <p id="message" class="error" role="alert"></p>
+            </form>
+
+            <hr>
+
+            <form id="pw-form" class="simple" novalidate>
+                <h4 class="sub-title">Change Password</h4>
+                <label for="current-password">Current password</label>
+                <input type="password" id="current-password" autocomplete="current-password">
+
+                <label for="new-password">New password</label>
+                <input type="password" id="new-password" autocomplete="new-password">
+
+                <label for="confirm-password">Confirm new password</label>
+                <input type="password" id="confirm-password" autocomplete="new-password">
+
+                <button type="submit" id="change-pw" class="btn">Change Password</button>
+                <p id="pw-message" class="error" role="alert"></p>
+            </form>
+
+            <hr>
+
+            <p class="fine"><button type="button" id="logout" class="btn">Log out</button></p>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <div id="footer">
+    PizzaPlanetStats&trade;
+  </div>
+
+</div>
+<script src="stars.js"></script>
+<script type="module" src="nav.js"></script>
+<script type="module" src="user.js"></script>
+</body>
+</html>
