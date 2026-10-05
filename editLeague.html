@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Edit League - Pizza Planet</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" type="image/png" href="logo.png">
+</head>
+<body>
+<div id="page">
+
+  <div id="banner">
+    <h1><img src="logo-big.png" alt="Pizza Planet"></h1>
+    <h2>Edit League</h2>
+  </div>
+
+  <div id="nav">
+    <a href="index.html">Home</a>
+    <a href="leaderboard.html">Leaderboard</a>
+    <a href="signin.html" id="auth-link">Sign In</a>
+  </div>
+
+  <div id="content">
+    <p id="checking">Checking login...</p>
+    <p id="status" class="hidden"></p>
+
+    <div id="form-area" class="hidden">
+      <form id="league-form" novalidate>
+
+        <div class="box">
+          <h3>League Name</h3>
+          <input type="text" id="league-name" maxlength="40" autocomplete="off">
+        </div>
+
+        <div class="box">
+          <h3>League Year</h3>
+          <input type="number" id="year" min="2000" max="2100" step="1" inputmode="numeric">
+          <p class="hint">The year the playoffs are played. For example, 2026 is the 2025-26 season.</p>
+        </div>
+
+        <div class="box">
+          <h3>Sign Ups</h3>
+          <label class="inline-check"><input type="checkbox" id="signups-open"> Sign ups open</label>
+          <p class="hint">When this is checked, teams can join this league.</p>
+        </div>
+
+        <div class="box">
+          <h3>Playoff Teams</h3>
+          <p class="hint">Pick the teams that have made the playoffs. You don't need all 16 yet. Come back and edit the league as teams clinch.</p>
+          <div id="playoff-teams" class="team-grid"></div>
+        </div>
+
+        <div class="box">
+          <h3>Skater Stats</h3>
+          <p class="hint">Check each stat you want to track and enter how many points each one is worth. Decimals and negatives work.</p>
+          <div class="scroll">
+            <table class="stats">
+              <thead>
+                <tr><th>Track</th><th>Stat</th><th>Points each</th></tr>
+              </thead>
+              <tbody id="skater-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="box">
+          <h3>Goalie Stats</h3>
+          <div class="scroll">
+            <table class="stats">
+              <thead>
+                <tr><th>Track</th><th>Stat</th><th>Points each</th></tr>
+              </thead>
+              <tbody id="goalie-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <p id="message" class="error" role="alert"></p>
+        <p>
+          <button type="submit" id="submit" class="btn">Save Changes</button>
+        </p>
+
+      </form>
+    </div>
+  </div>
+
+  <div id="footer">
+    PizzaPlanetStats&trade;
+  </div>
+
+</div>
+<script src="stars.js"></script>
+<script type="module" src="nav.js"></script>
+<script type="module" src="editLeague.js"></script>
+</body>
+</html>

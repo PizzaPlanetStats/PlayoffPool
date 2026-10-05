@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>League - Pizza Planet</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" type="image/png" href="logo.png">
+</head>
+<body>
+<div id="page">
+
+  <div id="banner">
+    <h1><img src="logo-big.png" alt="Pizza Planet"></h1>
+    <h2>League</h2>
+  </div>
+
+  <div id="nav">
+    <a href="index.html">Home</a>
+    <a href="leaderboard.html">Leaderboard</a>
+    <a href="signin.html" id="auth-link">Sign In</a>
+  </div>
+
+  <div id="content">
+    <p id="status">Loading league...</p>
+
+    <div id="league" class="hidden">
+      <div class="box team-card">
+        <h2 id="league-name" class="team-name"></h2>
+      </div>
+
+      <div class="box">
+        <h3>Registration</h3>
+        <p id="registration-text"></p>
+        <p id="signup-placeholder" class="hidden">Joining this league will be available here soon.</p>
+      </div>
+
+      <div class="box">
+        <h3>Rules</h3>
+        <p class="hint">Teams earn points for every stat below.</p>
+        <h4 class="sub-title">Skaters</h4>
+        <div id="skater-rules"></div>
+        <h4 class="sub-title">Goalies</h4>
+        <div id="goalie-rules"></div>
+      </div>
+
+      <div class="box">
+        <h3>Playoff Teams</h3>
+        <div id="playoff-teams"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">
+    PizzaPlanetStats&trade;
+  </div>
+
+</div>
+<script src="stars.js"></script>
+<script type="module" src="nav.js"></script>
+<script type="module" src="league.js"></script>
+</body>
+</html>

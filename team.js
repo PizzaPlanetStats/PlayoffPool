@@ -18,6 +18,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  writeBatch,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
@@ -35,18 +36,32 @@ export async function getProfile(uid)
   return snap.exists() ? snap.data() : null;
 }
 
+// the public copy of a team (just the name), readable by anyone including signed-out visitors
+export async function getPublicTeam(uid)
+{
+  const snap = await getDoc(doc(db, "teams", uid));
+  return snap.exists() ? snap.data() : null;
+}
+
 export async function signUpTeam(teamName, email, password, inviteCode)
 {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
 
   try
   {
-    // the rules only allow this if the league code matches
-    await setDoc(doc(db, "users", cred.user.uid), {
+    // two documents, saved together or not at all:
+    //   users/{id} is the private profile (the rules only allow it if the league code matches)
+    //   teams/{id} is the public copy of the team name, so signed-out visitors can see the team list
+    const batch = writeBatch(db);
+
+    batch.set(doc(db, "users", cred.user.uid), {
       teamName: teamName,
       inviteCode: inviteCode,
       createdAt: serverTimestamp()
     });
+    batch.set(doc(db, "teams", cred.user.uid), { teamName: teamName });
+
+    await batch.commit();
   }
   catch (err)
   {
@@ -78,7 +93,13 @@ export async function signInTeam(email, password)
 
 export async function updateTeamName(uid, teamName)
 {
-  await updateDoc(doc(db, "users", uid), { teamName: teamName });
+  // keep the private profile and the public copy of the name in step
+  const batch = writeBatch(db);
+
+  batch.update(doc(db, "users", uid), { teamName: teamName });
+  batch.set(doc(db, "teams", uid), { teamName: teamName });
+
+  await batch.commit();
 }
 
 // Firebase wants a recent login before a password change, so confirm the current password first

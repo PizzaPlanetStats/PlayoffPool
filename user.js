@@ -1,7 +1,9 @@
 // Pizza Planet - team profile page (user.html?id=TEAM_ID)
+// Anyone can view a team. Only the signed-in owner sees the account settings.
 // Team names are user-typed, so they are only ever shown with textContent, never as HTML.
 
-import { auth, onAuthStateChanged, signOut, getProfile, updateTeamName, validTeamName, changePassword } from "./team.js";
+import { auth, onAuthStateChanged, signOut, getProfile, getPublicTeam, updateTeamName, validTeamName, changePassword } from "./team.js";
+import { ACHIEVEMENTS } from "./achievements.js";
 
 const status = document.getElementById("status");
 const profileArea = document.getElementById("profile");
@@ -15,6 +17,7 @@ const pwForm = document.getElementById("pw-form");
 const pwMessage = document.getElementById("pw-message");
 const pwButton = document.getElementById("change-pw");
 const logoutButton = document.getElementById("logout");
+const achievementsArea = document.getElementById("achievements");
 
 const requestedId = new URLSearchParams(location.search).get("id");
 
@@ -32,23 +35,87 @@ function showTeamLogo(teamId, teamName)
     teamLogo.src = encodeURIComponent(teamId) + ".png";
 }
 
+function showAchievements(unlocked)
+{
+    achievementsArea.textContent = "";
+
+    const unlockedAchievements = ACHIEVEMENTS.filter(function(achievement) {
+        return unlocked.includes(achievement.id);
+    });
+
+    const lockedAchievements = ACHIEVEMENTS.filter(function(achievement) {
+        return !unlocked.includes(achievement.id);
+    });
+
+    if (unlockedAchievements.length > 0)
+    {
+        const unlockedTitle = document.createElement("h4");
+        unlockedTitle.textContent = "Unlocked";
+        achievementsArea.appendChild(unlockedTitle);
+
+        unlockedAchievements.forEach(function(achievement) {
+            const achievementBox = document.createElement("div");
+            achievementBox.className = "achievement unlocked";
+
+            const name = document.createElement("h4");
+            name.textContent = achievement.name;
+
+            const description = document.createElement("p");
+            description.textContent = achievement.description;
+
+            achievementBox.append(name, description);
+            achievementsArea.appendChild(achievementBox);
+        });
+    }
+
+    if (lockedAchievements.length > 0)
+    {
+        const lockedTitle = document.createElement("h4");
+        lockedTitle.textContent = "Locked";
+        achievementsArea.appendChild(lockedTitle);
+
+        lockedAchievements.forEach(function(achievement) {
+            const achievementBox = document.createElement("div");
+            achievementBox.className = "achievement locked";
+
+            const name = document.createElement("h4");
+            name.textContent = achievement.name;
+
+            const description = document.createElement("p");
+            description.textContent = achievement.description;
+
+            achievementBox.append(name, description);
+            achievementsArea.appendChild(achievementBox);
+        });
+    }
+}
+
 onAuthStateChanged(auth, async function(user) {
-    if (!user)
+    // "My Team" with no id in the address needs a signed-in team
+    if (!requestedId && !user)
     {
         location.replace("signin.html");
         return;
     }
 
     const teamId = requestedId || user.uid;
+    const isOwner = Boolean(user) && user.uid === teamId;
 
     let profile;
     try
     {
-        profile = await getProfile(teamId);
+        // the public copy of the team can be read by everyone
+        profile = await getPublicTeam(teamId);
+
+        // a team that is not on the public list yet can still be seen by its owner
+        if (!profile && isOwner)
+        {
+            profile = await getProfile(teamId);
+        }
     }
     catch (err)
     {
-        status.textContent = "You need a team account to view this page.";
+        status.textContent = "Could not load this team. Try again later.";
         return;
     }
 
@@ -61,14 +128,19 @@ onAuthStateChanged(auth, async function(user) {
     teamHeading.textContent = profile.teamName;
     document.title = profile.teamName + " - Pizza Planet";
     showTeamLogo(teamId, profile.teamName);
+
+    const unlocked = Array.isArray(profile.achievements) ? profile.achievements : [];
+    showAchievements(unlocked);
+
     status.classList.add("hidden");
     profileArea.classList.remove("hidden");
 
     // only the owner sees the account tools
-    if (user.uid === teamId)
+    ownArea.classList.toggle("hidden", !isOwner);
+
+    if (isOwner)
     {
         newName.value = profile.teamName;
-        ownArea.classList.remove("hidden");
     }
 });
 
@@ -81,7 +153,7 @@ renameForm.addEventListener("submit", async function(event) {
 
     if (!validTeamName(name))
     {
-        message.textContent = "You are a fool, team name must be 2 to 30 characters.";
+        message.textContent = "Team name must be 2 to 30 characters.";
         return;
     }
 
@@ -96,7 +168,7 @@ renameForm.addEventListener("submit", async function(event) {
     }
     catch (err)
     {
-        message.textContent = "Could not save the name. Regain.";
+        message.textContent = "Could not save the name. Try again.";
     }
 });
 
@@ -111,22 +183,22 @@ pwForm.addEventListener("submit", async function(event) {
 
     if (!current || !next || !confirm)
     {
-        pwMessage.textContent = "You are a fool, fill in all 3 boxes.";
+        pwMessage.textContent = "Fill in all three boxes.";
         return;
     }
-    if (next.length < 4)
+    if (next.length < 8)
     {
-        pwMessage.textContent = "You are a fool, new password must be at least 4 characters.";
+        pwMessage.textContent = "New password must be at least 8 characters.";
         return;
     }
     if (next !== confirm)
     {
-        pwMessage.textContent = "You are a fool, the new passwords do not match.";
+        pwMessage.textContent = "The new passwords do not match.";
         return;
     }
     if (next === current)
     {
-        pwMessage.textContent = "You are a fool, the new password must be different from the current one.";
+        pwMessage.textContent = "The new password must be different from the current one.";
         return;
     }
 
@@ -143,19 +215,19 @@ pwForm.addEventListener("submit", async function(event) {
     {
         if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential")
         {
-            pwMessage.textContent = "You are a fool, your current password is wrong.";
+            pwMessage.textContent = "Your current password is wrong.";
         }
         else if (err.code === "auth/weak-password")
         {
-            pwMessage.textContent = "You are a fool, that password SUCKS";
+            pwMessage.textContent = "Pick a stronger password.";
         }
         else if (err.code === "auth/too-many-requests")
         {
-            pwMessage.textContent = "You are a fool, too many attempts. Wait a few minutes and regain.";
+            pwMessage.textContent = "Too many attempts. Wait a few minutes and try again.";
         }
         else
         {
-            pwMessage.textContent = "Could not change the password. Regain.";
+            pwMessage.textContent = "Could not change the password. Try again.";
         }
     }
 

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Edit Team - Pizza Planet</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" type="image/png" href="logo.png">
+</head>
+<body>
+<div id="page">
+
+  <div id="banner">
+    <h1><img src="logo-big.png" alt="Pizza Planet"></h1>
+    <h2>Edit Team</h2>
+  </div>
+
+  <div id="nav">
+    <a href="index.html">Home</a>
+    <a href="leaderboard.html">Leaderboard</a>
+    <a href="signin.html" id="auth-link">Sign In</a>
+  </div>
+
+  <div id="content">
+    <p id="checking">Checking login...</p>
+    <p id="status" class="hidden"></p>
+
+    <div id="form-area" class="hidden">
+      <div class="box team-card">
+        <h2 id="team-name" class="team-name"></h2>
+        <p class="team-sub"><a id="view-link" href="#">View team page</a></p>
+      </div>
+
+      <form id="team-form" novalidate>
+        <div class="box">
+          <h3>Achievements</h3>
+          <p class="hint">Check each achievement this team has unlocked.</p>
+          <div class="scroll">
+            <table class="stats">
+              <thead>
+                <tr><th>Unlocked</th><th>Achievement</th></tr>
+              </thead>
+              <tbody id="achievements-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <p id="message" class="error" role="alert"></p>
+        <p>
+          <button type="submit" id="submit" class="btn">Save Changes</button>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <div id="footer">
+    PizzaPlanetStats&trade;
+  </div>
+
+</div>
+<script src="stars.js"></script>
+<script type="module" src="nav.js"></script>
+<script type="module" src="editTeam.js"></script>
+</body>
+</html>

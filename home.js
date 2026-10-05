@@ -1,55 +1,128 @@
-// Pizza Planet - list of teams on the home page
-// Only signed-in teams can read the team list (see firestore.rules).
-// Team names are user-typed, so they are only ever shown with textContent, never as HTML.
+// Pizza Planet - leagues and teams lists on the home page
+// Both lists are public. Team names come from the public "teams" collection (see firestore.rules).
+// Names are typed in by people, so they are only ever shown with textContent, never as HTML.
 
 import { db } from "./firebase.js";
 import { auth, onAuthStateChanged } from "./team.js";
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const signupPrompt = document.getElementById("signup-prompt");
+
+const leaguesStatus = document.getElementById("leagues-status");
+const leaguesTable = document.getElementById("leagues-table");
+const leaguesBody = document.getElementById("leagues-body");
+
 const teamsStatus = document.getElementById("teams-status");
 const teamsTable = document.getElementById("teams-table");
 const teamsBody = document.getElementById("teams-body");
 
-let loadedFor = null;
+let teams = null;
+let currentUser = null;
 
-function showSignInMessage()
+onAuthStateChanged(auth, function(user) {
+    currentUser = user;
+
+    // no need to offer sign up to someone who is already signed in
+    signupPrompt.classList.toggle("hidden", Boolean(user));
+
+    // redraw so the signed-in team gets its "(you)" mark
+    if (teams !== null)
+    {
+        renderTeams();
+    }
+});
+
+loadLeagues();
+loadTeams();
+
+// ---------- leagues ----------
+
+async function loadLeagues()
 {
-    teamsStatus.textContent = "Only signed-in teams can see the league. ";
-
-    const link = document.createElement("a");
-    link.href = "signin.html";
-    link.textContent = "Sign in";
-    teamsStatus.appendChild(link);
-
-    teamsStatus.classList.remove("hidden");
-    teamsTable.classList.add("hidden");
-    loadedFor = null;
-}
-
-async function loadTeams(user)
-{
-    teamsStatus.textContent = "Loading teams...";
-    teamsStatus.classList.remove("hidden");
-
-    let teams;
+    let leagues;
 
     try
     {
-        const snapshot = await getDocs(collection(db, "users"));
+        const snapshot = await getDocs(collection(db, "leagues"));
 
-        teams = snapshot.docs.map(function(teamDoc) {
-            const data = teamDoc.data();
+        leagues = snapshot.docs.map(function(leagueDoc) {
+            const data = leagueDoc.data();
             return {
-                id: teamDoc.id,
-                name: String(data.teamName || "(no name)")
+                id: leagueDoc.id,
+                // leagues made before names existed show their year as the name
+                name: String(data.name || (data.year + " League")),
+                year: data.year,
+                open: data.signupsOpen === true
             };
         });
     }
     catch (err)
     {
-        teamsStatus.textContent = "The team list is only available to teams in the league.";
-        teamsTable.classList.add("hidden");
+        leaguesStatus.textContent = "Could not load the leagues. Try again later.";
+        return;
+    }
+
+    // newest year first, then by name
+    leagues.sort(function(a, b) {
+        return (b.year - a.year) || a.name.localeCompare(b.name);
+    });
+
+    renderLeagues(leagues);
+}
+
+function renderLeagues(leagues)
+{
+    leaguesBody.textContent = "";
+
+    if (leagues.length === 0)
+    {
+        leaguesStatus.textContent = "No leagues yet.";
+        leaguesTable.classList.add("hidden");
+        return;
+    }
+
+    leaguesStatus.classList.add("hidden");
+    leaguesTable.classList.remove("hidden");
+
+    leagues.forEach(function(league) {
+        const row = document.createElement("tr");
+
+        // league name, links to the league's page
+        const nameCell = document.createElement("td");
+        const link = document.createElement("a");
+        link.href = "league.html?id=" + encodeURIComponent(league.id);
+        link.textContent = league.name;
+        nameCell.appendChild(link);
+
+        const yearCell = document.createElement("td");
+        yearCell.textContent = league.year;
+
+        const registrationCell = document.createElement("td");
+        registrationCell.textContent = league.open ? "Open" : "Closed";
+
+        row.append(nameCell, yearCell, registrationCell);
+        leaguesBody.appendChild(row);
+    });
+}
+
+// ---------- teams ----------
+
+async function loadTeams()
+{
+    try
+    {
+        const snapshot = await getDocs(collection(db, "teams"));
+
+        teams = snapshot.docs.map(function(teamDoc) {
+            return {
+                id: teamDoc.id,
+                name: String(teamDoc.data().teamName || "(no name)")
+            };
+        });
+    }
+    catch (err)
+    {
+        teamsStatus.textContent = "Could not load the teams. Try again later.";
         return;
     }
 
@@ -57,16 +130,17 @@ async function loadTeams(user)
         return a.name.localeCompare(b.name);
     });
 
-    renderTeams(teams, user);
+    renderTeams();
 }
 
-function renderTeams(teams, user)
+function renderTeams()
 {
     teamsBody.textContent = "";
 
     if (teams.length === 0)
     {
         teamsStatus.textContent = "No teams yet.";
+        teamsStatus.classList.remove("hidden");
         teamsTable.classList.add("hidden");
         return;
     }
@@ -76,7 +150,6 @@ function renderTeams(teams, user)
 
     teams.forEach(function(team) {
         const row = document.createElement("tr");
-
         const nameCell = document.createElement("td");
 
         // one flex row per team so the logo and name are centered on each other
@@ -106,7 +179,7 @@ function renderTeams(teams, user)
         nameText.appendChild(link);
 
         // mark the signed-in team's own row
-        if (user && user.uid === team.id)
+        if (currentUser && currentUser.uid === team.id)
         {
             nameText.appendChild(document.createTextNode(" (you)"));
         }
@@ -117,21 +190,3 @@ function renderTeams(teams, user)
         teamsBody.appendChild(row);
     });
 }
-
-onAuthStateChanged(auth, function(user) {
-    // no need to offer sign up to someone who is already signed in
-    signupPrompt.classList.toggle("hidden", Boolean(user));
-
-    if (!user)
-    {
-        showSignInMessage();
-        return;
-    }
-
-    // the auth state can fire more than once, only load once per person
-    if (loadedFor !== user.uid)
-    {
-        loadedFor = user.uid;
-        loadTeams(user);
-    }
-});

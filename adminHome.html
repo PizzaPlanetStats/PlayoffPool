@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Admin Home - Pizza Planet</title>
-<link rel="icon" type="image/png" href="logo.png">
 <link rel="stylesheet" href="styles.css">
+<link rel="icon" type="image/png" href="logo.png">
 </head>
 <body>
 <div id="page">
@@ -18,9 +18,7 @@
 
   <div id="nav">
     <a href="index.html">Home</a>
-    <a href="standings.html">Standings</a>
-    <a href="history.html">Past Years</a>
-    <a href="rules.html">Rules</a>
+    <a href="leaderboard.html">Leaderboard</a>
     <a href="signin.html" id="auth-link">Sign In</a>
   </div>
 
@@ -37,7 +35,33 @@
       </div>
 
       <div class="box">
+        <h3>Leagues</h3>
+        <p><a class="btn" href="createLeague.html">Create League</a></p>
+        <p id="leagues-status">Loading leagues...</p>
+        <div class="scroll">
+          <table class="stats hidden" id="leagues-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Year</th>
+                <th>Sign Ups</th>
+                <th>Created</th>
+                <th>Manage</th>
+              </tr>
+            </thead>
+            <tbody id="leagues-body"></tbody>
+          </table>
+        </div>
+        <p id="leagues-message" class="error" role="alert"></p>
+      </div>
+
+      <div class="box">
         <h3>Teams (<span id="team-count">0</span>)</h3>
+        <div id="sync-box" class="note-box hidden">
+          <p id="sync-note"></p>
+          <button type="button" id="sync-button" class="btn">Add to public list</button>
+          <p id="sync-message" class="error" role="alert"></p>
+        </div>
         <p id="teams-status">Loading teams...</p>
         <div class="scroll">
           <table class="stats hidden" id="teams-table">
@@ -46,7 +70,7 @@
                 <th>Team</th>
                 <th class="col-id">Team ID</th>
                 <th>Joined</th>
-                <th>Delete</th>
+                <th>Manage</th>
               </tr>
             </thead>
             <tbody id="teams-body"></tbody>

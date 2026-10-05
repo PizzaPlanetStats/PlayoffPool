@@ -387,11 +387,6 @@ table.stats tr:nth-child(even) td { background: #eef; }
   .col-id { display: none; }
 }
 
-/* admin shortcut in the nav bar (only shown to the admin) */
-#nav a.admin-link { background: var(--lime); }
-#nav a.admin-link:hover,
-#nav a.admin-link:focus { background: var(--gold); }
-
 /* lets a nav button be hidden (the nav rule above would otherwise win) */
 #nav a.hidden { display: none; }
 
@@ -417,4 +412,175 @@ table.stats tr:nth-child(even) td { background: #eef; }
   max-height: 100%;
   width: auto;
   height: auto;
+}
+
+/* create league form */
+.hint { font-size: 15px; color: #444; margin: 6px 0; }
+
+label.block {
+  display: block;
+  margin-top: 6px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+#league-form input[type="number"] {
+  box-sizing: border-box;
+  padding: 5px;
+  font-size: 16px;
+  font-family: Arial, Helvetica, sans-serif;
+  border: 2px inset #999;
+}
+
+#year { width: 120px; margin-top: 3px; }
+.points-input { width: 90px; }
+.points-input:disabled { background: #e2e2e2; }
+
+table.stats td.check { width: 50px; text-align: center; }
+table.stats td.check input { width: 18px; height: 18px; }
+
+/* league table buttons */
+td.actions { white-space: nowrap; }
+.btn.small + .btn.small { margin-left: 6px; }
+#leagues-message:not(.error) { color: #1a6e00; font-weight: bold; }
+
+/* league name box and sign ups checkbox */
+#league-form input[type="text"] {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 360px;
+  padding: 5px;
+  font-size: 16px;
+  font-family: Arial, Helvetica, sans-serif;
+  border: 2px inset #999;
+}
+
+label.inline-check {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+label.inline-check input {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* playoff team dropdowns */
+.team-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+}
+
+.team-slot label {
+  display: block;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.team-slot select {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px;
+  font-size: 15px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@media (max-width: 480px) {
+  .team-grid { grid-template-columns: 1fr; }
+}
+
+/* league page lists */
+.team-grid ul { margin: 4px 0 0; padding-left: 22px; }
+.team-grid li { margin: 2px 0; }
+
+/* league page: more breathing room between sections */
+#league .box { margin-bottom: 34px; }
+#league h3 { margin-bottom: 14px; }
+#league .hint { margin: 0 0 14px; }
+#league .sub-title { margin: 22px 0 12px; }
+#league .team-grid .sub-title { margin-top: 4px; }
+#league .scroll { margin-bottom: 10px; }
+#league p { margin-top: 0; }
+
+/* notice box on the admin page */
+.note-box {
+  margin: 8px 0 14px;
+  padding: 8px 12px;
+  background: #f0ffe0;
+  border: 2px groove var(--orange);
+}
+
+.note-box p { margin: 0 0 8px; }
+
+/* achievements */
+#achievements {
+  margin-top: 8px;
+}
+
+#achievements h4 {
+  margin: 12px 0 6px;
+  padding: 3px 8px;
+  background: var(--navy-dark);
+  color: var(--lime);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  border-bottom: 2px solid var(--orange);
+}
+
+.achievement {
+  display: inline-block;
+  box-sizing: border-box;
+  width: calc(50% - 6px);
+  margin: 4px 8px 4px 0;
+  padding: 7px 9px;
+  vertical-align: top;
+  border: 2px outset #ccc;
+  background: #eee;
+}
+
+.achievement h4 {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: #000;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 16px;
+}
+
+.achievement p {
+  margin: 3px 0 0;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.achievement.unlocked {
+  background: #f0ffe0;
+  border-color: var(--lime-dark);
+}
+
+.achievement.unlocked h4 {
+  color: var(--lime-dark);
+}
+
+.achievement.locked {
+  background: #e5e5e5;
+  border-color: #999;
+}
+
+.achievement.locked h4 {
+  color: #555;
+}
+
+@media (max-width: 600px) {
+  .achievement {
+    width: 100%;
+    margin-right: 0;
+  }
 }
