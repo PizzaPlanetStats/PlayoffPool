@@ -5,7 +5,7 @@
 import { db } from "./firebase.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { SKATER_STATS, GOALIE_STATS } from "./stats.js";
-import { NHL_TEAMS } from "./nhlTeams.js";
+import { renderBracket } from "./bracket.js";
 
 const status = document.getElementById("status");
 const leagueArea = document.getElementById("league");
@@ -57,7 +57,7 @@ async function loadLeague()
     renderRules(document.getElementById("skater-rules"), SKATER_STATS, scoring.skaters || {}, "No skater stats are tracked.");
     renderRules(document.getElementById("goalie-rules"), GOALIE_STATS, scoring.goalies || {}, "No goalie stats are tracked.");
 
-    renderPlayoffTeams(Array.isArray(data.playoffTeams) ? data.playoffTeams : []);
+    renderBracket(document.getElementById("playoff-teams"), data.playoffTeams);
 
     status.classList.add("hidden");
     leagueArea.classList.remove("hidden");
@@ -124,64 +124,4 @@ function renderRules(container, statList, values, emptyText)
 
     wrapper.appendChild(table);
     container.appendChild(wrapper);
-}
-
-// the playoff teams, split into Eastern and Western
-function renderPlayoffTeams(codes)
-{
-    const container = document.getElementById("playoff-teams");
-
-    if (codes.length === 0)
-    {
-        const none = document.createElement("p");
-        none.textContent = "The playoff teams haven't been set yet.";
-        container.appendChild(none);
-        return;
-    }
-
-    if (codes.length < 16)
-    {
-        const progress = document.createElement("p");
-        progress.className = "hint";
-        progress.textContent = codes.length + " of 16 teams have clinched so far.";
-        container.appendChild(progress);
-    }
-
-    const grid = document.createElement("div");
-    grid.className = "team-grid";
-
-    ["Eastern", "Western"].forEach(function(conference) {
-        const column = document.createElement("div");
-
-        const title = document.createElement("h4");
-        title.className = "sub-title";
-        title.textContent = conference;
-        column.appendChild(title);
-
-        const list = document.createElement("ul");
-
-        NHL_TEAMS.forEach(function(team) {
-            if (team.conference === conference && codes.includes(team.code))
-            {
-                const item = document.createElement("li");
-                item.textContent = team.name;
-                list.appendChild(item);
-            }
-        });
-
-        if (list.children.length === 0)
-        {
-            const none = document.createElement("p");
-            none.textContent = "None yet.";
-            column.appendChild(none);
-        }
-        else
-        {
-            column.appendChild(list);
-        }
-
-        grid.appendChild(column);
-    });
-
-    container.appendChild(grid);
 }

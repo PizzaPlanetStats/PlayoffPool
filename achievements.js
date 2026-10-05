@@ -6,6 +6,10 @@
 
 export const ACHIEVEMENTS = [
   { id: "winner",           name: "Winner! Gagnant!",                description: "Win a Playoff Pool." },
+  { id: "notAFluke",        name: "Not a Fluke",                     description: "Win 2 Playoff Pools." },
+  { id: "hatTrick",         name: "Hat Trick",                       description: "Win 3 Playoff Pools." },
+  { id: "spezzaApprentice", name: "Jason Spezza's Apprentice",       description: "Win 5 Playoff Pools." },
+  { id: "insiderTrader",    name: "Insider Trader",                  description: "Win 10 Playoff Pools." },
   { id: "dynasty",          name: "Dynasty",                         description: "Win 2 Playoff Pools in a row." },
   { id: "greatOne",         name: "The Great One",                   description: "Combine for a total of 894 goals in all seasons combined." },
   { id: "ultimateRegain",   name: "The Ultimate Regain",             description: "Get last place in a season, then win the following year." },
@@ -22,7 +26,7 @@ export const ACHIEVEMENTS = [
   { id: "ctulhu",           name: "Ctulhu",                          description: "Participate in 50 seasons." },
   { id: "backupGoalie",     name: "Backup Goalie",                   description: "Win with at least 1 player that got 0 points." },
   { id: "ourYear",          name: "This Year is our Year",           description: "Finish in the top 50% of standings 5 years in a row without winning." },
-  { id: "presidentsCurse",  name: "President Trophy Curse",          description: "Lose a season after being in first place going into the final round." },
+  { id: "presidentsCurse",  name: "President Trophy Curse",          description: "Lose after being in first place going into the final round." },
   { id: "miracleOnIce",     name: "Miracle on Ice",                  description: "Correctly predict a wildcard team to win the stanley cup." },
-  { id: "bismillah",        name: "The Bismillah Prediction",        description: "Correctly predict the Toronto Maple Leafs to win the stanley cup." }
+  { id: "bismillah",        name: "The Bismillah Prediction",        description: "Correctly predict the Toronto Maple Leafs to win the stanley cup." },
 ];

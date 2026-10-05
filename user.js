@@ -35,6 +35,30 @@ function showTeamLogo(teamId, teamName)
     teamLogo.src = encodeURIComponent(teamId) + ".png";
 }
 
+// a two-column grid of achievement boxes
+function buildAchievementGrid(achievements, state)
+{
+    const grid = document.createElement("div");
+    grid.className = "achievement-grid";
+
+    achievements.forEach(function(achievement) {
+        const achievementBox = document.createElement("div");
+        achievementBox.className = "achievement " + state;
+
+        const name = document.createElement("h4");
+        name.textContent = achievement.name;
+
+        const description = document.createElement("p");
+        description.textContent = achievement.description;
+
+        achievementBox.append(name, description);
+        grid.appendChild(achievementBox);
+    });
+
+    return grid;
+}
+
+// unlocked achievements are always shown, the locked ones are in a dropdown that starts closed
 function showAchievements(unlocked)
 {
     achievementsArea.textContent = "";
@@ -47,46 +71,30 @@ function showAchievements(unlocked)
         return !unlocked.includes(achievement.id);
     });
 
+    const unlockedTitle = document.createElement("h4");
+    unlockedTitle.textContent = "Unlocked (" + unlockedAchievements.length + " of " + ACHIEVEMENTS.length + ")";
+    achievementsArea.appendChild(unlockedTitle);
+
     if (unlockedAchievements.length > 0)
     {
-        const unlockedTitle = document.createElement("h4");
-        unlockedTitle.textContent = "Unlocked";
-        achievementsArea.appendChild(unlockedTitle);
-
-        unlockedAchievements.forEach(function(achievement) {
-            const achievementBox = document.createElement("div");
-            achievementBox.className = "achievement unlocked";
-
-            const name = document.createElement("h4");
-            name.textContent = achievement.name;
-
-            const description = document.createElement("p");
-            description.textContent = achievement.description;
-
-            achievementBox.append(name, description);
-            achievementsArea.appendChild(achievementBox);
-        });
+        achievementsArea.appendChild(buildAchievementGrid(unlockedAchievements, "unlocked"));
+    }
+    else
+    {
+        const none = document.createElement("p");
+        none.textContent = "No achievements unlocked yet.";
+        achievementsArea.appendChild(none);
     }
 
     if (lockedAchievements.length > 0)
     {
-        const lockedTitle = document.createElement("h4");
-        lockedTitle.textContent = "Locked";
-        achievementsArea.appendChild(lockedTitle);
+        const lockedGroup = document.createElement("details");
 
-        lockedAchievements.forEach(function(achievement) {
-            const achievementBox = document.createElement("div");
-            achievementBox.className = "achievement locked";
+        const lockedTitle = document.createElement("summary");
+        lockedTitle.textContent = "Locked (" + lockedAchievements.length + ") - click to show";
 
-            const name = document.createElement("h4");
-            name.textContent = achievement.name;
-
-            const description = document.createElement("p");
-            description.textContent = achievement.description;
-
-            achievementBox.append(name, description);
-            achievementsArea.appendChild(achievementBox);
-        });
+        lockedGroup.append(lockedTitle, buildAchievementGrid(lockedAchievements, "locked"));
+        achievementsArea.appendChild(lockedGroup);
     }
 }
 

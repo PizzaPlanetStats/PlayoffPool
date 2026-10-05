@@ -518,28 +518,32 @@ label.inline-check input {
 
 .note-box p { margin: 0 0 8px; }
 
-/* achievements */
-#achievements {
-  margin-top: 8px;
-}
+/* achievements (team page): two per row, the locked ones in a dropdown */
+#achievements { margin-top: 8px; }
 
-#achievements h4 {
-  margin: 12px 0 6px;
+#achievements > h4,
+#achievements summary {
+  margin: 12px 0 8px;
   padding: 3px 8px;
   background: var(--navy-dark);
   color: var(--lime);
   font-family: Arial, Helvetica, sans-serif;
   font-size: 16px;
-  border-bottom: 2px solid var(--orange);
+  font-weight: bold;
+}
+
+#achievements summary { cursor: pointer; }
+#achievements summary:hover { background: var(--navy); }
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 .achievement {
-  display: inline-block;
   box-sizing: border-box;
-  width: calc(50% - 6px);
-  margin: 4px 8px 4px 0;
   padding: 7px 9px;
-  vertical-align: top;
   border: 2px outset #ccc;
   background: #eee;
 }
@@ -579,8 +583,107 @@ label.inline-check input {
 }
 
 @media (max-width: 600px) {
-  .achievement {
-    width: 100%;
-    margin-right: 0;
-  }
+  .achievement-grid { grid-template-columns: 1fr; }
+}
+
+/* achievements on the admin edit team page */
+.ach-label {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 17px;
+  font-weight: bold;
+  color: var(--navy);
+}
+
+.ach-desc { margin-top: 3px; font-size: 15px; }
+
+/* playoff team dropdowns in bracket order */
+#league-form .sub-title { margin: 18px 0 10px; }
+
+.match-box {
+  padding: 8px 10px;
+  background: #f0ffe0;
+  border: 2px groove var(--orange);
+}
+
+.match-title {
+  margin-bottom: 6px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--navy);
+}
+
+.match-box .team-slot + .team-slot { margin-top: 6px; }
+
+/* the bracket on the league page */
+.bracket {
+  display: flex;
+  gap: 12px;
+  min-width: 640px;
+}
+
+.bracket-round {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bracket-title {
+  margin-bottom: 6px;
+  padding: 2px 6px;
+  background: var(--navy);
+  color: var(--lime);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* spreading the matches out evenly lines each match up between the two that feed it */
+.bracket-matches {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+.bracket-match {
+  margin: 3px 0;
+  background: #ffffff;
+  border: 2px solid var(--navy);
+}
+
+.bracket-team {
+  padding: 3px 6px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.bracket-team + .bracket-team { border-top: 1px solid #999999; }
+
+.bracket-team.tbd {
+  background: #f1f1f1;
+  color: #888888;
+  font-style: italic;
+}
+
+/* holds the background stars so they can fade in together once the page has loaded */
+#starfield {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 1.5s ease-in;
+}
+
+#starfield.visible { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  #starfield { transition: none; }
 }

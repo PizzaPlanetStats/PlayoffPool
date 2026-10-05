@@ -128,10 +128,18 @@ export function readDetails(nameText, yearText)
 }
 
 // ---------- playoff teams ----------
+// 16 dropdowns in BRACKET ORDER. Spot 1 is "Team 1" (East is teams 1-8, West is 9-16), and the saved list keeps every spot's place
+// (an empty string for a spot that is not set yet), so the order can be used to draw the bracket.
+//   Teams 1 and 2 play each other in round 1, so do 3 and 4, and so on.
+//   The winners of match 1 and match 2 play in round 2, and so on for all 4 rounds.
 
-// build the 16 dropdowns. Every dropdown is also added to the shared "selects" list.
+// build the 16 dropdowns. Every dropdown is also added to the shared "selects" list, in order.
 export function buildPlayoffTeams(container, selects)
 {
+    // older copies of the page put a grid class on this box, the groups below make their own grids
+    container.classList.remove("team-grid");
+    container.textContent = "";
+
     // group the teams by conference and division so they are easy to find
     const groups = {};
 
@@ -141,47 +149,81 @@ export function buildPlayoffTeams(container, selects)
         groups[label].push(team);
     });
 
-    for (let i = 0; i < PLAYOFF_SLOTS; i++)
-    {
-        const slot = document.createElement("div");
-        slot.className = "team-slot";
+    ["East", "West"].forEach(function(halfTitle, half) {
+        const title = document.createElement("h4");
+        title.className = "sub-title";
+        title.textContent = halfTitle;
 
-        const id = "playoff-team-" + (i + 1);
+        // a row of two matches here feeds one round 2 match
+        const grid = document.createElement("div");
+        grid.className = "team-grid";
 
-        const label = document.createElement("label");
-        label.htmlFor = id;
-        label.textContent = "Team " + (i + 1);
+        for (let m = 0; m < 4; m++)
+        {
+            const matchNumber = half * 4 + m + 1;
 
-        const select = document.createElement("select");
-        select.id = id;
+            const box = document.createElement("div");
+            box.className = "match-box";
 
-        const blank = document.createElement("option");
-        blank.value = "";
-        blank.textContent = "(not set)";
-        select.appendChild(blank);
+            const boxTitle = document.createElement("div");
+            boxTitle.className = "match-title";
+            boxTitle.textContent = "Round 1 - Match " + matchNumber;
+            box.appendChild(boxTitle);
 
-        Object.keys(groups).forEach(function(groupLabel) {
-            const group = document.createElement("optgroup");
-            group.label = groupLabel;
+            for (let side = 0; side < 2; side++)
+            {
+                const index = (matchNumber - 1) * 2 + side;
+                box.appendChild(buildTeamSlot(index, groups, selects));
+            }
 
-            groups[groupLabel].forEach(function(team) {
-                const option = document.createElement("option");
-                option.value = team.code;
-                option.textContent = team.name;
-                group.appendChild(option);
-            });
+            grid.appendChild(box);
+        }
 
-            select.appendChild(group);
+        container.append(title, grid);
+    });
+}
+
+// one labeled dropdown ("Team 5") for a spot in the bracket
+function buildTeamSlot(index, groups, selects)
+{
+    const slot = document.createElement("div");
+    slot.className = "team-slot";
+
+    const id = "playoff-team-" + (index + 1);
+
+    const label = document.createElement("label");
+    label.htmlFor = id;
+    label.textContent = "Team " + (index + 1);
+
+    const select = document.createElement("select");
+    select.id = id;
+
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "(not set)";
+    select.appendChild(blank);
+
+    Object.keys(groups).forEach(function(groupLabel) {
+        const group = document.createElement("optgroup");
+        group.label = groupLabel;
+
+        groups[groupLabel].forEach(function(team) {
+            const option = document.createElement("option");
+            option.value = team.code;
+            option.textContent = team.name;
+            group.appendChild(option);
         });
 
-        select.addEventListener("change", function() {
-            refreshTeamOptions(selects);
-        });
+        select.appendChild(group);
+    });
 
-        slot.append(label, select);
-        container.appendChild(slot);
-        selects.push(select);
-    }
+    select.addEventListener("change", function() {
+        refreshTeamOptions(selects);
+    });
+
+    slot.append(label, select);
+    selects[index] = select;
+    return slot;
 }
 
 // grey out teams that are already picked in another dropdown
@@ -202,32 +244,30 @@ function refreshTeamOptions(selects)
     });
 }
 
-// returns { teams: ["BOS", ...] } with any number of teams from 0 to 16, or { error: "..." }
-// (teams get added one by one as they clinch, so a partial list is fine)
+// returns { teams: [...16 codes in bracket order, "" for spots not set] }, or { error: "..." }
 export function collectPlayoffTeams(selects)
 {
-    const picks = selects.map(function(select) {
+    const teams = selects.map(function(select) {
         return select.value;
-    }).filter(function(value) {
-        return value !== "";
     });
 
-    if (new Set(picks).size !== picks.length)
+    const picked = teams.filter(function(code) {
+        return code !== "";
+    });
+
+    if (new Set(picked).size !== picked.length)
     {
         return { error: "Each team can only be picked once." };
     }
 
-    return { teams: picks };
+    return { teams: teams };
 }
 
 // set the dropdowns from a saved list of team codes (used when editing)
 export function fillPlayoffTeams(selects, teams)
 {
-    teams.forEach(function(code, index) {
-        if (selects[index])
-        {
-            selects[index].value = code;
-        }
+    selects.forEach(function(select, index) {
+        select.value = typeof teams[index] === "string" ? teams[index] : "";
     });
 
     refreshTeamOptions(selects);

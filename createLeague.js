@@ -5,7 +5,7 @@
 //   { name: "Pizza Planet Main League",
 //     year: 2026,
 //     signupsOpen: false,
-//     playoffTeams: ["BOS", "TOR", ...],   (16 team codes, or empty if not set yet)
+//     playoffTeams: ["BOS", "", "TOR", ...],   (16 spots in bracket order, "" = not set yet)
 //     scoring: { skaters: { goals: 3, assists: 2 }, goalies: { wins: 4 } },
 //     createdAt: (server time) }
 
