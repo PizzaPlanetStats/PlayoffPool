@@ -97,7 +97,7 @@ export async function updateTeamName(uid, teamName)
   const batch = writeBatch(db);
 
   batch.update(doc(db, "users", uid), { teamName: teamName });
-  batch.set(doc(db, "teams", uid), { teamName: teamName });
+  batch.set(doc(db, "teams", uid), { teamName: teamName }, { merge: true });
 
   await batch.commit();
 }

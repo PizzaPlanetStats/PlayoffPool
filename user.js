@@ -161,7 +161,7 @@ renameForm.addEventListener("submit", async function(event) {
 
     if (!validTeamName(name))
     {
-        message.textContent = "Team name must be 2 to 30 characters.";
+        message.textContent = "You are a fool, team name must be 2 to 30 characters.";
         return;
     }
 
@@ -176,7 +176,7 @@ renameForm.addEventListener("submit", async function(event) {
     }
     catch (err)
     {
-        message.textContent = "Could not save the name. Try again.";
+        message.textContent = "Could not save the name. Regain";
     }
 });
 
@@ -191,22 +191,22 @@ pwForm.addEventListener("submit", async function(event) {
 
     if (!current || !next || !confirm)
     {
-        pwMessage.textContent = "Fill in all three boxes.";
+        pwMessage.textContent = "You are a fool, fill in all three boxes.";
         return;
     }
-    if (next.length < 8)
+    if (next.length < 4)
     {
-        pwMessage.textContent = "New password must be at least 8 characters.";
+        pwMessage.textContent = "You are a fool, new password must be at least 4 characters.";
         return;
     }
     if (next !== confirm)
     {
-        pwMessage.textContent = "The new passwords do not match.";
+        pwMessage.textContent = "You are a fool, the new passwords do not match.";
         return;
     }
     if (next === current)
     {
-        pwMessage.textContent = "The new password must be different from the current one.";
+        pwMessage.textContent = "You are a fool, the new password must be different from the current one.";
         return;
     }
 
@@ -223,19 +223,19 @@ pwForm.addEventListener("submit", async function(event) {
     {
         if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential")
         {
-            pwMessage.textContent = "Your current password is wrong.";
+            pwMessage.textContent = "You are a fool, your current password is wrong.";
         }
         else if (err.code === "auth/weak-password")
         {
-            pwMessage.textContent = "Pick a stronger password.";
+            pwMessage.textContent = "You are a fool, that password is WEAK.";
         }
         else if (err.code === "auth/too-many-requests")
         {
-            pwMessage.textContent = "Too many attempts. Wait a few minutes and try again.";
+            pwMessage.textContent = "You are a fool, too many attempts. Wait a few minutes and regain.";
         }
         else
         {
-            pwMessage.textContent = "Could not change the password. Try again.";
+            pwMessage.textContent = "Could not change the password. Regain.";
         }
     }
 
