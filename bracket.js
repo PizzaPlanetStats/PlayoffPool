@@ -1,27 +1,32 @@
-// Pizza Planet - draws the playoff bracket from a list of 16 team codes.
+// Pizza Planet - draws the playoff bracket.
 //
-// The list is in BRACKET ORDER (index 0 is "Opponent 1"):
-//   positions 1 and 2 play each other in round 1, so do 3 and 4, 5 and 6, and so on
-//   the winners of matches 1 and 2 play each other in round 2, matches 3 and 4 also, and so on
-//   positions 1-8 are the top half of the bracket, 9-16 the bottom half, and the halves meet in the final
-// An empty string means that spot has not been set yet.
+//   renderBracket(container, teams)                     just shows it (league page)
+//   renderBracket(container, teams, { winners })        also shows the results so far
+//   renderBracket(container, teams, { winners, onPick}) teams can be clicked to pick a winner (admin page)
+//
+// "teams" is the list of 16 team codes in bracket order, see bracketLogic.js for how the bracket works.
 
 import { NHL_TEAMS } from "./nhlTeams.js";
+import {
+    TEAM_COUNT,
+    ROUND_COUNT,
+    matchesInRound,
+    roundStart,
+    normalizeCodes,
+    participants,
+    cleanWinners
+} from "./bracketLogic.js";
 
-const TEAM_COUNT = 16;
 const ROUND_NAMES = ["Round 1", "Round 2", "Round 3", "Round 4"];
 
-export function renderBracket(container, savedCodes)
+export function renderBracket(container, savedCodes, options)
 {
+    const settings = options || {};
+    const interactive = typeof settings.onPick === "function";
+
     container.textContent = "";
 
-    // always exactly 16 spots, "" for any that are not set
-    const codes = [];
-
-    for (let i = 0; i < TEAM_COUNT; i++)
-    {
-        codes.push(Array.isArray(savedCodes) && typeof savedCodes[i] === "string" ? savedCodes[i] : "");
-    }
+    const codes = normalizeCodes(savedCodes);
 
     const setCount = codes.filter(function(code) {
         return code !== "";
@@ -43,6 +48,9 @@ export function renderBracket(container, savedCodes)
         container.appendChild(progress);
     }
 
+    // results that don't make sense (for example a team that was swapped out) are dropped
+    const winners = cleanWinners(codes, settings.winners);
+
     const names = {};
     NHL_TEAMS.forEach(function(team) {
         names[team.code] = team.name;
@@ -55,42 +63,56 @@ export function renderBracket(container, savedCodes)
     const bracket = document.createElement("div");
     bracket.className = "bracket";
 
-    ROUND_NAMES.forEach(function(roundName, round) {
+    for (let round = 0; round < ROUND_COUNT; round++)
+    {
         const column = document.createElement("div");
         column.className = "bracket-round";
 
         const title = document.createElement("div");
         title.className = "bracket-title";
-        title.textContent = roundName;
+        title.textContent = ROUND_NAMES[round];
 
         const matches = document.createElement("div");
         matches.className = "bracket-matches";
 
-        // 8 matches in round 1, then 4, 2, and 1
-        const matchCount = TEAM_COUNT / Math.pow(2, round + 1);
-
-        for (let m = 0; m < matchCount; m++)
+        for (let m = 0; m < matchesInRound(round); m++)
         {
+            const index = roundStart(round) + m;
+            const teams = participants(codes, winners, round, m);
+            const bothKnown = teams[0] !== "" && teams[1] !== "";
+
             const match = document.createElement("div");
             match.className = "bracket-match";
 
-            for (let side = 0; side < 2; side++)
-            {
-                // only round 1 has known teams, later rounds fill in as winners are known
-                const code = round === 0 ? codes[m * 2 + side] : "";
+            teams.forEach(function(code) {
+                const known = code !== "";
+                const won = known && winners[index] === code;
+                const lost = known && winners[index] !== "" && winners[index] !== code;
 
-                const team = document.createElement("div");
-                team.className = code ? "bracket-team" : "bracket-team tbd";
-                team.textContent = code ? (names[code] || code) : "TBD";
+                const team = document.createElement(interactive ? "button" : "div");
+                team.className = "bracket-team" + (known ? "" : " tbd") + (won ? " won" : "") + (lost ? " lost" : "");
+                team.textContent = known ? (names[code] || code) : "TBD";
+
+                if (interactive)
+                {
+                    team.type = "button";
+                    team.disabled = !bothKnown;
+                    team.setAttribute("aria-pressed", String(won));
+
+                    team.addEventListener("click", function() {
+                        settings.onPick(index, code);
+                    });
+                }
+
                 match.appendChild(team);
-            }
+            });
 
             matches.appendChild(match);
         }
 
         column.append(title, matches);
         bracket.appendChild(column);
-    });
+    }
 
     scroll.appendChild(bracket);
     container.appendChild(scroll);

@@ -687,3 +687,32 @@ label.inline-check input {
 @media (prefers-reduced-motion: reduce) {
   #starfield { transition: none; }
 }
+
+/* bracket results: pickable teams on the admin page, winners and losers on both */
+button.bracket-team {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.bracket-team:hover:not(:disabled),
+button.bracket-team:focus:not(:disabled) { background: var(--gold); }
+
+button.bracket-team:disabled { cursor: default; }
+
+.bracket-team.won {
+  background: #d9ffbf;
+  font-weight: bold;
+}
+
+.bracket-team.lost {
+  color: #888888;
+  text-decoration: line-through;
+}

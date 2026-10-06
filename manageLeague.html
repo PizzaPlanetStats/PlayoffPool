@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Manage League - Pizza Planet</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" type="image/png" href="logo.png">
+</head>
+<body>
+<div id="page">
+
+  <div id="banner">
+    <h1><img src="logo-big.png" alt="Pizza Planet"></h1>
+    <h2>Manage League</h2>
+  </div>
+
+  <div id="nav">
+    <a href="index.html">Home</a>
+    <a href="leaderboard.html">Leaderboard</a>
+    <a href="signin.html" id="auth-link">Sign In</a>
+  </div>
+
+  <div id="content">
+    <p id="checking">Checking login...</p>
+    <p id="status" class="hidden"></p>
+
+    <div id="manage-area" class="hidden">
+      <div class="box team-card">
+        <h2 id="league-name" class="team-name"></h2>
+      </div>
+
+      <div class="box">
+        <h3>Playoff Bracket Results</h3>
+        <p class="hint">Click the team that won each match. Click it again to undo. Later rounds fill in as you pick winners.</p>
+        <div id="bracket"></div>
+        <p id="unsaved" class="hint hidden">You have unsaved changes.</p>
+        <p id="message" class="error" role="alert"></p>
+        <p>
+          <button type="button" id="save" class="btn">Save Results</button>
+        </p>
+      </div>
+
+      <div class="box">
+        <h3>Team Status</h3>
+        <p class="hint">Where each team stands. The prediction points will be worked out from this.</p>
+        <div class="scroll">
+          <table class="stats">
+            <thead>
+              <tr><th>#</th><th>Team</th><th>Status</th></tr>
+            </thead>
+            <tbody id="status-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">
+    PizzaPlanetStats&trade;
+  </div>
+
+</div>
+<script src="stars.js"></script>
+<script type="module" src="nav.js"></script>
+<script type="module" src="manageLeague.js"></script>
+</body>
+</html>

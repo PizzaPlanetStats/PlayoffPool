@@ -126,6 +126,11 @@ function renderLeagues()
         const manageCell = document.createElement("td");
         manageCell.className = "actions";
 
+        const manageLink = document.createElement("a");
+        manageLink.className = "btn small";
+        manageLink.href = "manageLeague.html?id=" + encodeURIComponent(league.id);
+        manageLink.textContent = "Manage";
+
         const editLink = document.createElement("a");
         editLink.className = "btn small";
         editLink.href = "editLeague.html?id=" + encodeURIComponent(league.id);
@@ -139,7 +144,7 @@ function renderLeagues()
             deleteLeague(league, deleteButton);
         });
 
-        manageCell.append(editLink, deleteButton);
+        manageCell.append(manageLink, editLink, deleteButton);
         row.append(nameCell, yearCell, signupsCell, createdCell, manageCell);
         leaguesBody.appendChild(row);
     });
@@ -245,8 +250,9 @@ function renderTeams()
         const joinedCell = document.createElement("td");
         joinedCell.textContent = team.joined ? team.joined.toLocaleDateString() : "";
 
-        // manage buttons
+        // edit and delete buttons
         const manageCell = document.createElement("td");
+        manageCell.className = "actions";
 
         const editLink = document.createElement("a");
         editLink.className = "btn small";
@@ -262,7 +268,6 @@ function renderTeams()
         });
 
         manageCell.append(editLink, deleteButton);
-        
 
         row.append(nameCell, idCell, joinedCell, manageCell);
         teamsBody.appendChild(row);

@@ -57,7 +57,9 @@ async function loadLeague()
     renderRules(document.getElementById("skater-rules"), SKATER_STATS, scoring.skaters || {}, "No skater stats are tracked.");
     renderRules(document.getElementById("goalie-rules"), GOALIE_STATS, scoring.goalies || {}, "No goalie stats are tracked.");
 
-    renderBracket(document.getElementById("playoff-teams"), data.playoffTeams);
+    renderBracket(document.getElementById("playoff-teams"), data.playoffTeams, {
+        winners: data.results ? data.results.winners : []
+    });
 
     status.classList.add("hidden");
     leagueArea.classList.remove("hidden");
