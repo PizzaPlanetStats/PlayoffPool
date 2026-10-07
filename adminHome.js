@@ -3,6 +3,7 @@
 // Team names are user-typed, so they are only ever shown with textContent, never as HTML.
 
 import { auth, db, isAdmin, onAuthStateChanged, signOut } from "./firebase.js";
+import { leaguePhase, phaseInfo } from "./phases.js";
 import {
     collection,
     getDocs,
@@ -75,7 +76,7 @@ async function loadLeagues()
                 // leagues made before names existed show their year as the name
                 name: String(data.name || (data.year + " League")),
                 year: data.year,
-                signupsOpen: data.signupsOpen === true,
+                phase: leaguePhase(data),
                 created: data.createdAt ? data.createdAt.toDate() : null
             };
         });
@@ -117,8 +118,8 @@ function renderLeagues()
         const yearCell = document.createElement("td");
         yearCell.textContent = league.year;
 
-        const signupsCell = document.createElement("td");
-        signupsCell.textContent = league.signupsOpen ? "Open" : "Closed";
+        const phaseCell = document.createElement("td");
+        phaseCell.textContent = phaseInfo(league.phase).label;
 
         const createdCell = document.createElement("td");
         createdCell.textContent = league.created ? league.created.toLocaleDateString() : "";
@@ -145,7 +146,7 @@ function renderLeagues()
         });
 
         manageCell.append(manageLink, editLink, deleteButton);
-        row.append(nameCell, yearCell, signupsCell, createdCell, manageCell);
+        row.append(nameCell, yearCell, phaseCell, createdCell, manageCell);
         leaguesBody.appendChild(row);
     });
 }

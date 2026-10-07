@@ -28,7 +28,7 @@
       <p id="signup-prompt"><a class="btn" href="signup.html">Sign Up</a></p>
     </div>
     <div class="box">
-      <h3>Leagues</h3>
+      <h3>Ongoing Leagues</h3>
       <p id="leagues-status">Loading leagues...</p>
       <div class="scroll">
         <table class="stats hidden" id="leagues-table">
@@ -36,10 +36,25 @@
             <tr>
               <th>Name</th>
               <th>Year</th>
-              <th>Registration</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody id="leagues-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="box">
+      <h3>League Archival</h3>
+      <p id="past-status">Loading past leagues...</p>
+      <div class="scroll">
+        <table class="stats hidden" id="past-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Year</th>
+            </tr>
+          </thead>
+          <tbody id="past-body"></tbody>
         </table>
       </div>
     </div>

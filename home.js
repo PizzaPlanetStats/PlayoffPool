@@ -5,12 +5,17 @@
 import { db } from "./firebase.js";
 import { auth, onAuthStateChanged } from "./team.js";
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { leaguePhase, phaseInfo } from "./phases.js";
 
 const signupPrompt = document.getElementById("signup-prompt");
 
 const leaguesStatus = document.getElementById("leagues-status");
 const leaguesTable = document.getElementById("leagues-table");
 const leaguesBody = document.getElementById("leagues-body");
+
+const pastStatus = document.getElementById("past-status");
+const pastTable = document.getElementById("past-table");
+const pastBody = document.getElementById("past-body");
 
 const teamsStatus = document.getElementById("teams-status");
 const teamsTable = document.getElementById("teams-table");
@@ -36,6 +41,8 @@ loadLeagues();
 loadTeams();
 
 // ---------- leagues ----------
+// The first table is every league that has not ended (phases 1 to 3).
+// The second table is the archive: leagues that have ended (phase 4).
 
 async function loadLeagues()
 {
@@ -52,13 +59,19 @@ async function loadLeagues()
                 // leagues made before names existed show their year as the name
                 name: String(data.name || (data.year + " League")),
                 year: data.year,
-                open: data.signupsOpen === true
+                phase: leaguePhase(data)
             };
         });
     }
     catch (err)
     {
         leaguesStatus.textContent = "Could not load the leagues. Try again later.";
+
+        if (pastStatus)
+        {
+            pastStatus.textContent = "Could not load the past leagues. Try again later.";
+        }
+
         return;
     }
 
@@ -67,22 +80,36 @@ async function loadLeagues()
         return (b.year - a.year) || a.name.localeCompare(b.name);
     });
 
-    renderLeagues(leagues);
+    const current = leagues.filter(function(league) {
+        return league.phase !== "ended";
+    });
+    const past = leagues.filter(function(league) {
+        return league.phase === "ended";
+    });
+
+    renderLeagueTable(current, leaguesStatus, leaguesTable, leaguesBody, "No leagues open.", true);
+
+    if (pastTable)
+    {
+        renderLeagueTable(past, pastStatus, pastTable, pastBody, "No past leagues found.", false);
+    }
 }
 
-function renderLeagues(leagues)
+// fill one of the league tables (the current one also shows each league's status)
+function renderLeagueTable(leagues, status, table, body, emptyText, showStatus)
 {
-    leaguesBody.textContent = "";
+    body.textContent = "";
 
     if (leagues.length === 0)
     {
-        leaguesStatus.textContent = "No leagues yet.";
-        leaguesTable.classList.add("hidden");
+        status.textContent = emptyText;
+        status.classList.remove("hidden");
+        table.classList.add("hidden");
         return;
     }
 
-    leaguesStatus.classList.add("hidden");
-    leaguesTable.classList.remove("hidden");
+    status.classList.add("hidden");
+    table.classList.remove("hidden");
 
     leagues.forEach(function(league) {
         const row = document.createElement("tr");
@@ -97,11 +124,16 @@ function renderLeagues(leagues)
         const yearCell = document.createElement("td");
         yearCell.textContent = league.year;
 
-        const registrationCell = document.createElement("td");
-        registrationCell.textContent = league.open ? "Open" : "Closed";
+        row.append(nameCell, yearCell);
 
-        row.append(nameCell, yearCell, registrationCell);
-        leaguesBody.appendChild(row);
+        if (showStatus)
+        {
+            const statusCell = document.createElement("td");
+            statusCell.textContent = phaseInfo(league.phase).label;
+            row.appendChild(statusCell);
+        }
+
+        body.appendChild(row);
     });
 }
 

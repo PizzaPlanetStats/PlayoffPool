@@ -2,6 +2,8 @@
 // (the stat checklist, the league name and year checks, and the playoff team dropdowns).
 
 import { NHL_TEAMS } from "./nhlTeams.js";
+import { PREDICTION_POINTS } from "./predictions.js";
+import { PHASES } from "./phases.js";
 
 export const PLAYOFF_SLOTS = 16;
 
@@ -271,4 +273,158 @@ export function fillPlayoffTeams(selects, teams)
     });
 
     refreshTeamOptions(selects);
+}
+
+// ---------- prediction points ----------
+// A box for each prediction (round 1 to 4 elimination, and champion) holding how many points it is worth.
+
+// build the table of boxes. Every box is also added to the shared "inputs" list.
+// (If the page has no box for it, nothing is built and the league keeps whatever it had.)
+export function buildPredictionPoints(container, inputs)
+{
+    if (!container)
+    {
+        return;
+    }
+
+    container.textContent = "";
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "scroll";
+
+    const table = document.createElement("table");
+    table.className = "stats";
+
+    const head = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    ["Prediction", "Points"].forEach(function(title) {
+        const th = document.createElement("th");
+        th.textContent = title;
+        headRow.appendChild(th);
+    });
+    head.appendChild(headRow);
+    table.appendChild(head);
+
+    const body = document.createElement("tbody");
+
+    PREDICTION_POINTS.forEach(function(prediction) {
+        const id = "prediction-" + prediction.key;
+        const row = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        const label = document.createElement("label");
+        label.htmlFor = id;
+        label.textContent = prediction.label;
+        nameCell.appendChild(label);
+
+        const pointsCell = document.createElement("td");
+        const input = document.createElement("input");
+        input.type = "number";
+        input.step = "any";
+        input.min = "0";
+        input.id = id;
+        input.className = "points-input";
+        input.value = prediction.points;
+        pointsCell.appendChild(input);
+
+        row.append(nameCell, pointsCell);
+        body.appendChild(row);
+        inputs.push({ prediction: prediction, input: input });
+    });
+
+    table.appendChild(body);
+    wrapper.appendChild(table);
+    container.appendChild(wrapper);
+}
+
+// returns { points: { round1: 10, ... } }, { points: null } if the page has no boxes, or { error: "..." }
+export function collectPredictionPoints(inputs)
+{
+    if (inputs.length === 0)
+    {
+        return { points: null };
+    }
+
+    const points = {};
+
+    for (const entry of inputs)
+    {
+        const text = entry.input.value.trim();
+        const value = Number(text);
+
+        if (text === "" || !Number.isFinite(value) || value < 0 || value > 1000)
+        {
+            return { error: "Prediction points for " + entry.prediction.label + " must be a number from 0 to 1000." };
+        }
+
+        points[entry.prediction.key] = value;
+    }
+
+    return { points: points };
+}
+
+// set the boxes from a saved league (used when editing). Older leagues have none saved, so they show the defaults.
+export function fillPredictionPoints(inputs, saved)
+{
+    inputs.forEach(function(entry) {
+        const value = saved ? saved[entry.prediction.key] : undefined;
+
+        entry.input.value = typeof value === "number" ? value : entry.prediction.points;
+    });
+}
+
+// ---------- league phase ----------
+// A row of radio buttons, one for each phase. The first one ("created") starts selected.
+
+// build the radio buttons. Every button is also added to the shared "radios" list.
+// (If the page has no box for it, nothing is built and the league keeps the phase it had.)
+export function buildPhaseChoices(container, radios)
+{
+    if (!container)
+    {
+        return;
+    }
+
+    container.textContent = "";
+
+    PHASES.forEach(function(phase, index) {
+        const label = document.createElement("label");
+        label.className = "phase-choice";
+
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "league-phase";
+        radio.value = phase.key;
+        radio.checked = index === 0;
+
+        const text = document.createElement("span");
+        text.textContent = (index + 1) + ". " + phase.choice;
+
+        label.append(radio, text);
+        container.appendChild(label);
+        radios.push(radio);
+    });
+}
+
+// the chosen phase key, or null if the page has no radio buttons
+export function collectPhase(radios)
+{
+    if (radios.length === 0)
+    {
+        return null;
+    }
+
+    const chosen = radios.find(function(radio) {
+        return radio.checked;
+    });
+
+    return chosen ? chosen.value : radios[0].value;
+}
+
+// select the radio button for a saved phase (used when editing)
+export function fillPhase(radios, phase)
+{
+    radios.forEach(function(radio) {
+        radio.checked = radio.value === phase;
+    });
 }

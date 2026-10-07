@@ -24,7 +24,7 @@ export const ACHIEVEMENTS = [
   { id: "smoothER",         name: "Smooth Endoplasmic Reticulum",    description: "Participate in 30 seasons." },
   { id: "grandMufti",       name: "Grand Mufti",                     description: "Participate in 40 seasons." },
   { id: "ctulhu",           name: "Ctulhu",                          description: "Participate in 50 seasons." },
-  { id: "backupGoalie",     name: "Backup Goalie",                   description: "Win with at least 1 player that got 0 points." },
+  { id: "backupGoalie",     name: "Backup Goalie",                   description: "Win with one player on your roster that played 0 playoff games." },
   { id: "ourYear",          name: "This Year is our Year",           description: "Finish in the top 50% of standings 5 years in a row without winning." },
   { id: "presidentsCurse",  name: "President Trophy Curse",          description: "Lose after being in first place going into the final round." },
   { id: "miracleOnIce",     name: "Miracle on Ice",                  description: "Correctly predict a wildcard team to win the stanley cup." },

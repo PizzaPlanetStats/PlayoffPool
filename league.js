@@ -6,6 +6,8 @@ import { db } from "./firebase.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { SKATER_STATS, GOALIE_STATS } from "./stats.js";
 import { renderBracket } from "./bracket.js";
+import { phaseInfo, leaguePhase } from "./phases.js";
+import { PREDICTION_POINTS, ONE_ROUND_OFF_RULE } from "./predictions.js";
 
 const status = document.getElementById("status");
 const leagueArea = document.getElementById("league");
@@ -51,11 +53,13 @@ async function loadLeague()
     leagueName.textContent = name;
     document.title = name + " - Pizza Planet";
 
-    renderRegistration(data.signupsOpen === true);
+    renderPhase(leaguePhase(data));
 
     const scoring = data.scoring || {};
-    renderRules(document.getElementById("skater-rules"), SKATER_STATS, scoring.skaters || {}, "No skater stats are tracked.");
+    renderRules(document.getElementById("skater-rules"), SKATER_STATS, scoring.skaters || {}, "No player stats are tracked.");
     renderRules(document.getElementById("goalie-rules"), GOALIE_STATS, scoring.goalies || {}, "No goalie stats are tracked.");
+
+    renderPredictionRules(document.getElementById("prediction-rules"), data.predictionPoints);
 
     renderBracket(document.getElementById("playoff-teams"), data.playoffTeams, {
         winners: data.results ? data.results.winners : []
@@ -65,16 +69,14 @@ async function loadLeague()
     leagueArea.classList.remove("hidden");
 }
 
-function renderRegistration(open)
+// what phase the league is in. Joining is only offered while registration is open.
+function renderPhase(phase)
 {
-    if (open)
+    registrationText.textContent = phaseInfo(phase).message;
+
+    if (phase === "open")
     {
-        registrationText.textContent = "Registration is open.";
         signupPlaceholder.classList.remove("hidden");
-    }
-    else
-    {
-        registrationText.textContent = "Registration is closed.";
     }
 }
 
@@ -126,4 +128,57 @@ function renderRules(container, statList, values, emptyText)
 
     wrapper.appendChild(table);
     container.appendChild(wrapper);
+}
+
+// what each correct prediction is worth. Leagues made before this was a setting use the standard points.
+function renderPredictionRules(container, saved)
+{
+    if (!container)
+    {
+        return;
+    }
+
+    container.textContent = "";
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "scroll";
+
+    const table = document.createElement("table");
+    table.className = "stats";
+
+    const head = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    ["Correct prediction", "Points"].forEach(function(title) {
+        const th = document.createElement("th");
+        th.textContent = title;
+        headRow.appendChild(th);
+    });
+    head.appendChild(headRow);
+    table.appendChild(head);
+
+    const body = document.createElement("tbody");
+
+    PREDICTION_POINTS.forEach(function(prediction) {
+        const value = saved ? saved[prediction.key] : undefined;
+
+        const row = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        nameCell.textContent = prediction.label;
+
+        const pointsCell = document.createElement("td");
+        pointsCell.textContent = typeof value === "number" ? value : prediction.points;
+
+        row.append(nameCell, pointsCell);
+        body.appendChild(row);
+    });
+
+    table.appendChild(body);
+    wrapper.appendChild(table);
+    container.appendChild(wrapper);
+
+    const note = document.createElement("p");
+    note.className = "hint";
+    note.textContent = ONE_ROUND_OFF_RULE;
+    container.appendChild(note);
 }
