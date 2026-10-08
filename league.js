@@ -76,6 +76,15 @@ function renderPhase(phase)
 
     if (phase === "open")
     {
+        // the Register button replaces any placeholder text
+        signupPlaceholder.textContent = "";
+
+        const register = document.createElement("a");
+        register.className = "btn";
+        register.href = "register.html?id=" + encodeURIComponent(leagueId);
+        register.textContent = "Register";
+
+        signupPlaceholder.appendChild(register);
         signupPlaceholder.classList.remove("hidden");
     }
 }

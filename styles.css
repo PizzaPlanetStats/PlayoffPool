@@ -735,3 +735,121 @@ button.bracket-team:disabled { cursor: default; }
   margin-right: 8px;
   vertical-align: middle;
 }
+
+/* player groups: the admin editor on the manage page and the pick boxes on the register page */
+.group-card {
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  background: #f0ffe0;
+  border: 2px groove var(--orange);
+}
+
+.group-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.group-number {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  color: var(--navy);
+}
+
+.group-head input[type="text"],
+.player-adder input[type="text"] {
+  flex: 1 1 160px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 5px;
+  font-size: 16px;
+  font-family: Arial, Helvetica, sans-serif;
+  border: 2px inset #999;
+}
+
+.group-players {
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.group-players li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid #cccccc;
+}
+
+.group-players .player-name { flex: 1; }
+
+input.team-input {
+  flex: 0 0 64px;
+  width: 64px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 4px;
+  font-size: 15px;
+  font-family: Arial, Helvetica, sans-serif;
+  text-transform: uppercase;
+  border: 2px inset #999;
+}
+
+.player-adder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-results { flex: 1 1 100%; }
+
+.search-results button {
+  display: block;
+  width: 100%;
+  margin: 2px 0;
+  padding: 5px 8px;
+  background: #ffffff;
+  border: 1px solid #999999;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-results button:hover,
+.search-results button:focus { background: var(--gold); }
+
+.group-title {
+  margin-bottom: 6px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 17px;
+  font-weight: bold;
+  color: var(--navy);
+}
+
+.pick {
+  display: block;
+  margin: 6px 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+}
+
+.pick input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.pick input[type="text"] {
+  box-sizing: border-box;
+  width: 60%;
+  min-width: 140px;
+  padding: 5px;
+  font-size: 16px;
+  font-family: Arial, Helvetica, sans-serif;
+  border: 2px inset #999;
+}

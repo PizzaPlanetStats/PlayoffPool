@@ -32,6 +32,18 @@
       </div>
 
       <div class="box">
+        <h3>Player Groups</h3>
+        <p class="hint">Each team picks exactly 1 player from every group. Search for players to add them, so every player is matched to the NHL's own data. A group can also let teams type in their own player. A league can have 1 to 50 groups.</p>
+        <p id="nhl-status" class="hint"></p>
+        <div id="groups"></div>
+        <p><button type="button" id="add-group" class="btn small">Add Group</button> <span id="group-count" class="hint"></span></p>
+        <p id="groups-message" class="error" role="alert"></p>
+        <p><button type="button" id="save-groups" class="btn">Save Groups</button></p>
+      </div>
+
+      <p id="no-teams-note" class="hidden">This league has no playoff teams yet. Use Edit on the admin page to set them, then come back here to enter results.</p>
+
+      <div id="results-box" class="box">
         <h3>Playoff Bracket Results</h3>
         <p class="hint">Click the team that won each match. Click it again to undo. Later rounds fill in as you pick winners.</p>
         <div id="bracket"></div>
@@ -42,7 +54,7 @@
         </p>
       </div>
 
-      <div class="box">
+      <div id="status-box" class="box">
         <h3>Team Status</h3>
         <p class="hint">Where each team stands. The prediction points will be worked out from this.</p>
         <div class="scroll">

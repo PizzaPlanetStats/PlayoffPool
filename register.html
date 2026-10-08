@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Register - Pizza Planet</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" type="image/png" href="logo.png">
+</head>
+<body>
+<div id="page">
+
+  <div id="banner">
+    <h1><img src="logo-big.png" alt="Pizza Planet"></h1>
+    <h2>Register</h2>
+  </div>
+
+  <div id="nav">
+    <a href="index.html">Home</a>
+    <a href="leaderboard.html">Leaderboard</a>
+    <a href="signin.html" id="auth-link">Sign In</a>
+  </div>
+
+  <div id="content">
+    <p id="status">Loading...</p>
+
+    <div id="register-area" class="hidden">
+      <div class="box team-card">
+        <h2 id="league-name" class="team-name"></h2>
+        <p id="registering-as" class="team-sub"></p>
+      </div>
+
+      <div id="step-bracket">
+        <div class="box">
+          <h3>Step 1 of 2: Bracket Prediction</h3>
+          <p class="hint">Click the team you think will win each match, all the way to the champion. You earn points for every team whose knockout round you predict correctly. The points are on the league page.</p>
+          <div id="bracket"></div>
+          <p id="bracket-count" class="hint"></p>
+          <p id="bracket-message" class="error" role="alert"></p>
+          <p><button type="button" id="to-players" class="btn">Next: Player Picks</button></p>
+        </div>
+      </div>
+
+      <div id="step-players" class="hidden">
+        <div class="box">
+          <h3>Step 2 of 2: Player Picks</h3>
+          <p class="hint">Pick exactly 1 player from every group. If a group has an Other option, you can type in any player you like, but not someone who is already a choice in another group.</p>
+          <div id="groups"></div>
+          <p id="submit-message" class="error" role="alert"></p>
+          <p>
+            <button type="button" id="back" class="btn">Back</button>
+            <button type="button" id="submit" class="btn">Submit Registration</button>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">
+    PizzaPlanetStats&trade;
+  </div>
+
+</div>
+<script src="stars.js"></script>
+<script type="module" src="nav.js"></script>
+<script type="module" src="register.js"></script>
+</body>
+</html>
