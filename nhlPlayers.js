@@ -2,25 +2,13 @@
 // Used by the admin to build player groups (so every group player really exists in the NHL data)
 // and when a team types in a custom player (to warn them if the name isn't in the NHL data).
 //
-// It downloads every team's roster from the NHL web API (the one nhl.com itself uses):
-//   https://api-web.nhle.com/v1/roster/{TEAM}/current       for a league that is playing now or next
-//   https://api-web.nhle.com/v1/roster/{TEAM}/{SEASON}      for an older league, like 20252026
-// once, then searches the list in the browser. Each player keeps the NHL's player id, which is what
-// the stats update will use later to find them, and the team they are on.
-//
-// (The NHL's other API, api.nhle.com/stats/rest, does not allow requests from web pages, so it can't be used here.)
+// The browser can't ask the NHL directly, so everything goes through our Cloudflare Worker (see nhlConfig.js).
+// Each player keeps the NHL's player id, which is what the stats update uses to find them.
 
-import { NHL_TEAMS } from "./nhlTeams.js";
+import { NHL_PROXY, proxyReady } from "./nhlConfig.js";
 
-const API = "https://api-web.nhle.com/v1";
-const cache = {};   // league year -> the list of players (as a promise)
-
-// a league for 2026 is the 2025-26 season, whose id is 20252026
-export function seasonIdForYear(year)
-{
-    const y = Number(year);
-    return (y - 1) * 10000 + y;
-}
+const lists = {};         // the list for each year, once it has been asked for
+let listDate = "";        // when the list was made
 
 // "Alex Ovechkin" and "alex  OVECHKIN" and "Alex Óvechkin" all become "alex ovechkin"
 export function normalizeName(name)
@@ -33,117 +21,56 @@ export function normalizeName(name)
         .trim();
 }
 
-// Utah took over from Arizona in 2024-25, so older leagues look at Arizona instead
-function teamCodesForYear(year)
-{
-    const codes = NHL_TEAMS.map(function(team) {
-        return team.code;
-    });
-
-    if (Number(year) <= 2024)
-    {
-        return codes.filter(function(code) { return code !== "UTA"; }).concat("ARI");
-    }
-
-    return codes;
-}
-
-// is this league for the season that is on now (or the next one)? Then ask for the current rosters.
-function wantsCurrentRoster(year)
-{
-    const now = new Date();
-    const thisYear = now.getFullYear();
-
-    // January to July the season ends this year, from August on it ends next year
-    return Number(year) > thisYear || (Number(year) === thisYear && now.getMonth() <= 6);
-}
-
-function nameOf(part)
-{
-    return part && typeof part === "object" ? String(part.default || "") : String(part || "");
-}
-
-function playersFromRoster(roster, team)
-{
-    const found = [];
-
-    ["forwards", "defensemen", "goalies"].forEach(function(group) {
-        (Array.isArray(roster[group]) ? roster[group] : []).forEach(function(row) {
-            const name = (nameOf(row.firstName) + " " + nameOf(row.lastName)).trim();
-
-            if (!name || row.id === undefined || row.id === null)
-            {
-                return;
-            }
-
-            found.push({
-                id: String(row.id),
-                name: name,
-                team: team,
-                position: String(row.positionCode || (group === "goalies" ? "G" : group === "defensemen" ? "D" : "")),
-                norm: normalizeName(name)
-            });
-        });
-    });
-
-    return found;
-}
-
-// one team's players, or null if that team couldn't be loaded (a team that didn't exist that season, for example)
-async function loadTeam(team, year)
-{
-    const when = wantsCurrentRoster(year) ? "current" : String(seasonIdForYear(year));
-
-    try
-    {
-        const response = await fetch(API + "/roster/" + team + "/" + when);
-
-        if (!response.ok)
-        {
-            return null;
-        }
-
-        return playersFromRoster(await response.json(), team);
-    }
-    catch (err)
-    {
-        return null;
-    }
-}
-
-// every player on every team's roster. Throws if the NHL API can't be reached at all.
+// every NHL player on the rosters of one season. "year" is the year the playoffs end in (2018 = the 2017-18 season).
+// Leave it out for today's rosters. Throws if the NHL can't be reached.
 export function loadPlayers(year)
 {
-    if (!cache[year])
+    const key = year ? String(year) : "current";
+
+    if (!lists[key])
     {
-        cache[year] = Promise.all(teamCodesForYear(year).map(function(team) {
-            return loadTeam(team, year);
-        })).then(function(results) {
-            const loaded = results.filter(function(players) {
-                return players !== null;
-            });
+        if (!proxyReady())
+        {
+            return Promise.reject(new Error("The NHL proxy address isn't set yet (see nhlConfig.js)."));
+        }
 
-            if (loaded.length === 0)
-            {
-                throw new Error("The NHL API could not be reached.");
-            }
+        lists[key] = fetch(NHL_PROXY + "/players" + (year ? "?season=" + encodeURIComponent(year) : ""))
+            .then(async function(response) {
+                if (!response.ok)
+                {
+                    throw new Error("The NHL player list isn't available (" + response.status + ").");
+                }
 
-            const byId = new Map();
+                const body = await response.json();
+                const rows = Array.isArray(body.players) ? body.players : [];
 
-            loaded.forEach(function(players) {
-                players.forEach(function(player) {
-                    byId.set(player.id, player);
+                listDate = String(body.generatedAt || "");
+
+                return rows.map(function(row) {
+                    return {
+                        id: String(row.id),
+                        name: String(row.name),
+                        team: String(row.team || ""),
+                        position: String(row.position || ""),
+                        norm: normalizeName(row.name)
+                    };
                 });
+            })
+            .catch(function(err) {
+                delete lists[key];   // so the next try asks again
+                throw err;
             });
-
-            return Array.from(byId.values());
-        }).catch(function(err) {
-            delete cache[year];   // so the next try asks again
-            throw err;
-        });
     }
 
-    return cache[year];
+    return lists[key];
+}
+
+// when the list was last updated, as a readable date ("" if unknown)
+export function playerListDate()
+{
+    const date = new Date(listDate);
+
+    return isNaN(date.getTime()) ? "" : date.toLocaleDateString();
 }
 
 // players whose name contains every word that was typed, best matches first
@@ -178,4 +105,30 @@ export function findPlayerByName(players, name)
     return players.find(function(player) {
         return player.norm === norm;
     });
+}
+
+// A player's playoff totals for one year (the year the playoffs end in, e.g. 2026 for the 2025-26 season).
+// Returns the NHL's playoff season row for that year, or null if the player has none (didn't play).
+export async function loadPlayoffTotals(playerId, year)
+{
+    if (!proxyReady())
+    {
+        throw new Error("The NHL proxy address isn't set yet (see nhlConfig.js).");
+    }
+
+    const response = await fetch(NHL_PROXY + "/web/v1/player/" + encodeURIComponent(playerId) + "/landing");
+
+    if (!response.ok)
+    {
+        throw new Error("Could not load stats (" + response.status + ").");
+    }
+
+    const body = await response.json();
+    const season = Number(year - 1) * 10000 + Number(year);
+
+    const rows = (body.seasonTotals || []).filter(function(row) {
+        return row.leagueAbbrev === "NHL" && row.gameTypeId === 3 && row.season === season;
+    });
+
+    return rows.length > 0 ? rows[0] : null;
 }

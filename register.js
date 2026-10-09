@@ -183,7 +183,7 @@ function cleanGroup(group, index)
 {
     return {
         id: String(group.id || "g" + index),
-        name: String(group.name || "Group " + (index + 1)),
+        name: "Group " + (index + 1),
         allowOther: group.allowOther === true,
         players: (Array.isArray(group.players) ? group.players : []).map(function(player) {
             return {
@@ -254,7 +254,7 @@ function buildGroups(entry)
 
         const title = document.createElement("div");
         title.className = "group-title";
-        title.textContent = (index + 1) + ". " + group.name;
+        title.textContent = group.name;
         card.appendChild(title);
 
         const radioName = "group-" + group.id;

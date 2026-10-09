@@ -170,7 +170,7 @@ function normalizeGroups(saved)
     return saved.map(function(group, index) {
         return {
             id: String(group.id || "g" + index),
-            name: String(group.name || ""),
+            name: "Group " + (index + 1),
             allowOther: group.allowOther === true,
             players: (Array.isArray(group.players) ? group.players : []).map(function(player) {
                 return {
@@ -197,8 +197,8 @@ async function loadNhlPlayers()
         if (nhlPlayers.length === 0)
         {
             nhlState = "failed";
-            nhlStatus.textContent = "The NHL data has no players for the " + (leagueYear - 1) + "-" + String(leagueYear).slice(2)
-                + " season yet, so players can't be searched. You can add them by name below instead.";
+            nhlStatus.textContent = "The NHL has no players on file for the " + (leagueYear - 1) + "-" + String(leagueYear).slice(2)
+                + " season, so players can't be searched. You can add them by name below instead.";
         }
         else
         {
@@ -208,7 +208,7 @@ async function loadNhlPlayers()
     catch (err)
     {
         nhlState = "failed";
-        nhlStatus.textContent = "Could not reach the NHL API from this page, so players can't be searched. "
+        nhlStatus.textContent = "Could not reach the NHL player list (the Cloudflare Worker), so players can't be searched. "
             + "You can add them by name below, but they won't be checked against the NHL data.";
     }
 
@@ -246,16 +246,6 @@ function buildGroupCard(group, index)
     number.className = "group-number";
     number.textContent = "Group " + (index + 1);
 
-    const nameInput = document.createElement("input");
-    nameInput.type = "text";
-    nameInput.maxLength = 40;
-    nameInput.value = group.name;
-    nameInput.placeholder = "Group name";
-    nameInput.setAttribute("aria-label", "Name for group " + (index + 1));
-    nameInput.addEventListener("input", function() {
-        group.name = nameInput.value;
-    });
-
     const otherLabel = document.createElement("label");
     otherLabel.className = "inline-check";
     const otherBox = document.createElement("input");
@@ -271,7 +261,7 @@ function buildGroupCard(group, index)
     removeGroup.className = "btn small";
     removeGroup.textContent = "Remove group";
     removeGroup.addEventListener("click", function() {
-        const sure = confirm("Remove group " + (index + 1) + (group.name.trim() ? " (" + group.name.trim() + ")" : "") + " and its players?");
+        const sure = confirm("Remove group " + (index + 1) + " and its players?");
 
         if (sure)
         {
@@ -280,7 +270,7 @@ function buildGroupCard(group, index)
         }
     });
 
-    head.append(number, nameInput, otherLabel, removeGroup);
+    head.append(number, otherLabel, removeGroup);
     card.appendChild(head);
 
     // the players in this group
@@ -292,7 +282,7 @@ function buildGroupCard(group, index)
 
         const label = document.createElement("span");
         label.className = "player-name";
-        label.textContent = player.name + (player.position ? " - " + player.position : "") + (player.id ? "" : " (not matched to the NHL)");
+        label.textContent = player.name + (player.id ? "" : " (not matched to the NHL)");
 
         const teamInput = document.createElement("input");
         teamInput.type = "text";
@@ -371,7 +361,7 @@ function buildPlayerAdder(group, groupIndex)
             matches.forEach(function(player) {
                 const button = document.createElement("button");
                 button.type = "button";
-                button.textContent = player.name + (player.team ? " (" + player.team + ")" : "") + " - " + (player.position || "?");
+                button.textContent = player.name + (player.team ? " (" + player.team + ")" : "");
                 button.addEventListener("click", function() {
                     addPlayer(group, player);
                 });
@@ -438,7 +428,7 @@ function addPlayer(group, player)
 
         if (found)
         {
-            groupMessage(player.name + " is already in group " + (i + 1) + (groups[i].name.trim() ? " (" + groups[i].name.trim() + ")" : "") + ". A player can only be in one group.");
+            groupMessage(player.name + " is already in group " + (i + 1) + "" + ". A player can only be in one group.");
             return;
         }
     }
@@ -475,7 +465,7 @@ saveGroupsButton.addEventListener("click", async function() {
     for (let i = 0; i < groups.length; i++)
     {
         const group = groups[i];
-        const name = group.name.trim() || ("Group " + (i + 1));
+        const name = "Group " + (i + 1);
 
         if (group.players.length === 0 && !group.allowOther)
         {
