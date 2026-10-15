@@ -32,6 +32,31 @@
       </div>
 
       <div class="box">
+        <h3>League Phase</h3>
+        <div id="league-phase"></div>
+        <p id="phase-message" class="error" role="alert"></p>
+        <p><button type="button" id="save-phase" class="btn">Save Phase</button></p>
+      </div>
+
+      <div class="box">
+        <h3>Teams</h3>
+        <p id="entries-status" class="hint"></p>
+        <div id="entries-scroll" class="scroll hidden">
+          <table class="stats">
+            <thead>
+              <tr><th>Team</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="entries-body"></tbody>
+          </table>
+        </div>
+        <p>
+          <select id="add-team" aria-label="Team to add"></select>
+          <button type="button" id="add-team-button" class="btn small">Add Team</button>
+        </p>
+        <p id="entries-message" class="error" role="alert"></p>
+      </div>
+
+      <div class="box">
         <h3>Player Groups</h3>
         <p class="hint">Each team picks exactly 1 player from every group. Search for players to add them, so every player is matched to the NHL's own data. A group can also let teams type in their own player. A league can have 1 to 50 groups.</p>
         <p id="nhl-status" class="hint"></p>

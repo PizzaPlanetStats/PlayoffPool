@@ -3,6 +3,8 @@
 //   renderBracket(container, teams)                     just shows it (league page)
 //   renderBracket(container, teams, { winners })        also shows the results so far
 //   renderBracket(container, teams, { winners, onPick}) teams can be clicked to pick a winner (admin page)
+//   renderBracket(container, teams, { winners, marks })  puts a points badge on some teams (a team's page).
+//     marks["MATCHINDEX:TEAMCODE"] = { kind: "exact" | "half" | "miss", text: "+10", detail: "out R2", title: "..." }
 //
 // "teams" is the list of 16 team codes in bracket order, see bracketLogic.js for how the bracket works.
 
@@ -92,6 +94,20 @@ export function renderBracket(container, savedCodes, options)
                 const team = document.createElement(interactive ? "button" : "div");
                 team.className = "bracket-team" + (known ? "" : " tbd") + (won ? " won" : "") + (lost ? " lost" : "");
                 team.textContent = known ? (names[code] || code) : "TBD";
+
+                // points earned by this prediction, shown next to the team
+                const mark = known && settings.marks ? settings.marks[index + ":" + code] : null;
+
+                if (mark)
+                {
+                    team.classList.add("mark-" + mark.kind);
+                    team.title = mark.title || "";
+
+                    const badge = document.createElement("span");
+                    badge.className = "bracket-mark";
+                    badge.textContent = mark.text + (mark.detail ? " (" + mark.detail + ")" : "");
+                    team.appendChild(badge);
+                }
 
                 if (interactive)
                 {

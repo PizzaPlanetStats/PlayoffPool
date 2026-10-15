@@ -6,9 +6,12 @@
 //     players: { GROUP_ID: { type: "option", id, name, team }  or  { type: "other", name } },
 //     createdAt: (server time) }
 //
+// The admin can also open  register.html?id=LEAGUE_ID&team=TEAM_ID  to add a team to a league or change its picks,
+// whatever phase the league is in (the rules allow this for the admin only).
+//
 // Team names and player names are typed in by people, so they are only ever shown with textContent.
 
-import { db } from "./firebase.js";
+import { db, isAdmin } from "./firebase.js";
 import { auth, onAuthStateChanged, getProfile } from "./team.js";
 import {
     doc,
@@ -39,7 +42,12 @@ const submitMessage = document.getElementById("submit-message");
 const backButton = document.getElementById("back");
 const submitButton = document.getElementById("submit");
 
-const leagueId = new URLSearchParams(location.search).get("id");
+const params = new URLSearchParams(location.search);
+const leagueId = params.get("id");
+const teamParam = params.get("team");
+
+let adminMode = false;     // the admin is editing another team's picks
+let targetId = "";         // the team whose registration this is
 
 let user = null;
 let leagueYear = 0;
@@ -98,6 +106,15 @@ async function start()
         return;
     }
 
+    adminMode = Boolean(teamParam);
+    targetId = adminMode ? teamParam : user.uid;
+
+    if (adminMode && (!/^[A-Za-z0-9]{1,128}$/.test(teamParam) || !(await isAdmin(user))))
+    {
+        showStatus("Team not found.");
+        return;
+    }
+
     let league;
     let profile;
     let entry = null;
@@ -113,11 +130,21 @@ async function start()
         }
 
         league = snap.data();
-        profile = await getProfile(user.uid);
+
+        if (adminMode)
+        {
+            // the public team list has the name
+            const teamSnap = await getDoc(doc(db, "teams", targetId));
+            profile = teamSnap.exists() ? { teamName: String(teamSnap.data().teamName || "") } : null;
+        }
+        else
+        {
+            profile = await getProfile(user.uid);
+        }
 
         try
         {
-            const entrySnap = await getDoc(doc(db, "leagues", leagueId, "entries", user.uid));
+            const entrySnap = await getDoc(doc(db, "leagues", leagueId, "entries", targetId));
             entry = entrySnap.exists() ? entrySnap.data() : null;
         }
         catch (err)
@@ -131,7 +158,7 @@ async function start()
         return;
     }
 
-    if (leaguePhase(league) !== "open")
+    if (!adminMode && leaguePhase(league) !== "open")
     {
         showStatus("Registration is not open for this league.");
         return;
@@ -139,7 +166,7 @@ async function start()
 
     if (!profile)
     {
-        showStatus("You need a team account to register. The admin account can't register.");
+        showStatus(adminMode ? "Team not found." : "You need a team account to register. The admin account can't register.");
         return;
     }
 
@@ -163,7 +190,9 @@ async function start()
     hasEntry = entry !== null;
 
     leagueName.textContent = String(league.name || (league.year + " League"));
-    registeringAs.textContent = (hasEntry ? "Editing the registration for " : "Registering ") + profile.teamName;
+    registeringAs.textContent = adminMode
+        ? (hasEntry ? "Editing the picks for " : "Adding ") + profile.teamName
+        : (hasEntry ? "Editing the registration for " : "Registering ") + profile.teamName;
 
     if (hasEntry && entry.bracket)
     {
@@ -391,8 +420,8 @@ function collectPicks()
             if (elsewhere)
             {
                 const otherGroup = groups.find(function(g) { return g.id === elsewhere; });
-                return fail("\"" + name + "\" is already a choice in the group \"" + otherGroup.name + "\", so you can't enter them in \""
-                    + group.name + "\". Pick them in that group, or choose someone else here.", selection.card);
+                return fail(name + " is already a choice in group " + (groups.indexOf(otherGroup) + 1) + ", so you can't enter them in " + group.name
+                    + ". Pick them in that group, or pick someone else.", selection.card);
             }
 
             // they are a choice in this very group, so just use that choice
@@ -488,7 +517,7 @@ submitButton.addEventListener("click", async function() {
             }
         }
 
-        const ref = doc(db, "leagues", leagueId, "entries", user.uid);
+        const ref = doc(db, "leagues", leagueId, "entries", targetId);
         const entry = { bracket: { winners: winners }, players: result.picks };
 
         if (hasEntry)
@@ -526,11 +555,20 @@ function showDone()
 {
     registerArea.classList.add("hidden");
 
-    status.textContent = "You're registered! Your picks are saved. You can change them any time while registration is open. ";
-
     const link = document.createElement("a");
-    link.href = "league.html?id=" + encodeURIComponent(leagueId);
-    link.textContent = "Back to the league";
+
+    if (adminMode)
+    {
+        status.textContent = "Saved. ";
+        link.href = "manageLeague.html?id=" + encodeURIComponent(leagueId);
+        link.textContent = "Back to Manage League";
+    }
+    else
+    {
+        status.textContent = "Registration complete. You can change your picks at any time while registration is open. ";
+        link.href = "league.html?id=" + encodeURIComponent(leagueId);
+        link.textContent = "Back to the league";
+    }
 
     status.appendChild(link);
     status.classList.remove("hidden");

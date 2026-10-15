@@ -853,3 +853,187 @@ input.team-input {
   font-family: Arial, Helvetica, sans-serif;
   border: 2px inset #999;
 }
+
+/* standings and league team pages */
+table.standings th.num,
+table.standings td.num 
+{ 
+  text-align: center; white-space: nowrap; 
+}
+table.standings td .team-row 
+{ 
+  min-width: 160px; 
+}
+.team-row-big 
+{ 
+  justify-content: center; 
+}
+.thumb-box.big 
+{ 
+  flex: 0 0 auto; width: auto; height: auto; max-width: 120px; max-height: 120px; margin-right: 14px; 
+}
+.thumb-box.big:empty 
+{ 
+  display: none; 
+}
+.team-sub 
+{ 
+  margin: 6px 0 0; 
+}
+
+/* a team's page: pick tables coloured by how far the player's NHL team got, and points on the bracket */
+table.pick-table tfoot td
+{
+  background: #ffffff;
+  border-top: 3px solid #000;
+  font-weight: bold;
+}
+
+table.pick-table td.points-cell
+{
+  font-weight: bold;
+}
+
+table.stats tr.elim-1 td { background: #e89a9a; }
+table.stats tr.elim-2 td { background: #f8c9a0; }
+table.stats tr.elim-3 td { background: #ffe699; }
+table.stats tr.elim-4 td { background: #a9c4f5; }
+
+.legend .swatch
+{
+  display: inline-block;
+  margin: 2px 4px;
+  padding: 1px 8px;
+  border: 1px solid #000;
+  font-size: 13px;
+}
+
+.swatch.elim-1 { background: #e89a9a; }
+.swatch.elim-2 { background: #f8c9a0; }
+.swatch.elim-3 { background: #ffe699; }
+.swatch.elim-4 { background: #a9c4f5; }
+
+.bracket-team.mark-exact,
+.swatch.mark-exact
+{
+  background: #b6e3a0;
+}
+
+.bracket-team.mark-half,
+.swatch.mark-half
+{
+  background: #ffe699;
+}
+
+.bracket-team.mark-miss,
+.swatch.mark-miss
+{
+  background: #e89a9a;
+}
+
+.bracket-mark
+{
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  text-decoration: none;
+  color: #000000;
+}
+
+
+/* team page: centred stat columns that are all the same width, and the total points bar */
+table.pick-table
+{
+  table-layout: fixed;
+}
+
+table.pick-table th:first-child
+{
+  width: 40%;
+}
+
+table.pick-table th.num,
+table.pick-table td.num
+{
+  padding-left: 2px;
+  padding-right: 2px;
+  text-align: center;
+}
+
+table.pick-table td:first-child
+{
+  overflow-wrap: anywhere;
+}
+
+.total-box
+{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--navy-dark);
+  border: 4px ridge var(--orange);
+  color: #fff;
+}
+
+.total-label
+{
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.total-value
+{
+  font-family: "Courier New", Courier, monospace;
+  font-size: 30px;
+  font-weight: bold;
+  color: var(--lime);
+}
+
+/* team page: space between the team name and the league name, and a narrower total points bar */
+#team-area .team-sub
+{
+  margin-top: 16px;
+}
+
+.total-box
+{
+  gap: 20px;
+  width: fit-content;
+  max-width: 280px;
+  min-width: 200px;
+}
+
+/* team page: bigger league name */
+#team-area .team-sub
+{
+  font-size: 22px;
+}
+
+/* manage page: green "Phase saved." message */
+#phase-message:not(.error)
+{
+  color: #1a6e00;
+  font-weight: bold;
+}
+
+/* league page standings: every number column the same width */
+#standings table.standings
+{
+  table-layout: fixed;
+  min-width: 560px;
+}
+
+#standings table.standings th:first-child
+{
+  width: 34%;
+}
+
+#standings table.standings th.num,
+#standings table.standings td.num
+{
+  padding-left: 2px;
+  padding-right: 2px;
+}

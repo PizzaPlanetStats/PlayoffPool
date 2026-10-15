@@ -13,11 +13,17 @@ import { auth, db, isAdmin, onAuthStateChanged } from "./firebase.js";
 import {
     doc,
     getDoc,
-    updateDoc
+    updateDoc,
+    deleteField,
+    deleteDoc,
+    collection,
+    getDocs
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { NHL_TEAMS } from "./nhlTeams.js";
 import { renderBracket } from "./bracket.js";
 import { CHAMPION, normalizeCodes, cleanWinners, eliminationRounds } from "./bracketLogic.js";
+import { leaguePhase } from "./phases.js";
+import { buildPhaseChoices, collectPhase, fillPhase } from "./leagueForm.js";
 import { loadPlayers, searchPlayers, normalizeName } from "./nhlPlayers.js";
 
 const MAX_GROUPS = 50;
@@ -27,6 +33,17 @@ const checking = document.getElementById("checking");
 const status = document.getElementById("status");
 const manageArea = document.getElementById("manage-area");
 const leagueName = document.getElementById("league-name");
+
+const entriesStatus = document.getElementById("entries-status");
+const entriesScroll = document.getElementById("entries-scroll");
+const entriesBody = document.getElementById("entries-body");
+const addTeamSelect = document.getElementById("add-team");
+const addTeamButton = document.getElementById("add-team-button");
+const entriesMessage = document.getElementById("entries-message");
+
+const phaseBox = document.getElementById("league-phase");
+const phaseMessage = document.getElementById("phase-message");
+const savePhaseButton = document.getElementById("save-phase");
 
 const nhlStatus = document.getElementById("nhl-status");
 const groupsBox = document.getElementById("groups");
@@ -51,6 +68,7 @@ NHL_TEAMS.forEach(function(team) {
     names[team.code] = team.name;
 });
 
+const phaseRadios = [];
 let leagueYear = 0;
 let codes = [];
 let winners = [];
@@ -117,6 +135,13 @@ async function loadLeague()
     status.classList.add("hidden");
     manageArea.classList.remove("hidden");
 
+    // ----- teams in the league -----
+    loadEntries();
+
+    // ----- league phase -----
+    buildPhaseChoices(phaseBox, phaseRadios);
+    fillPhase(phaseRadios, leaguePhase(data));
+
     // ----- player groups -----
     groups = normalizeGroups(data.playerGroups);
     renderGroups();
@@ -143,6 +168,159 @@ async function loadLeague()
         unsavedNote.classList.remove("hidden");
     }
 }
+
+/* =========================================================== teams in the league */
+
+// every registered team with Edit and Delete, and a list of the teams that could still be added.
+// The admin can do all of this in any phase (the rules allow it for the admin only).
+async function loadEntries()
+{
+    entriesMessage.textContent = "";
+
+    let entryDocs;
+    const names = {};
+
+    try
+    {
+        entryDocs = await getDocs(collection(db, "leagues", leagueId, "entries"));
+
+        const teamDocs = await getDocs(collection(db, "teams"));
+        teamDocs.forEach(function(teamDoc) {
+            names[teamDoc.id] = String(teamDoc.data().teamName || "(no name)");
+        });
+    }
+    catch (err)
+    {
+        entriesStatus.textContent = "Could not load the teams. Try again.";
+        return;
+    }
+
+    const registered = entryDocs.docs.map(function(entryDoc) {
+        return { id: entryDoc.id, name: names[entryDoc.id] || "(unknown team)" };
+    }).sort(function(a, b) {
+        return a.name.localeCompare(b.name);
+    });
+
+    entriesBody.textContent = "";
+    entriesStatus.textContent = registered.length === 0 ? "No teams registered." : "";
+    entriesScroll.classList.toggle("hidden", registered.length === 0);
+
+    registered.forEach(function(team) {
+        const row = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        const nameLink = document.createElement("a");
+        nameLink.href = "leagueTeam.html?id=" + encodeURIComponent(leagueId) + "&team=" + encodeURIComponent(team.id);
+        nameLink.textContent = team.name;
+        nameCell.appendChild(nameLink);
+
+        const actionCell = document.createElement("td");
+        actionCell.className = "actions";
+
+        const edit = document.createElement("a");
+        edit.className = "btn small";
+        edit.href = adminRegisterUrl(team.id);
+        edit.textContent = "Edit";
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "btn small";
+        remove.textContent = "Delete";
+        remove.addEventListener("click", async function() {
+            if (!confirm("Delete the picks of " + team.name + " in this league?"))
+            {
+                return;
+            }
+
+            remove.disabled = true;
+
+            try
+            {
+                await deleteDoc(doc(db, "leagues", leagueId, "entries", team.id));
+                loadEntries();
+            }
+            catch (err)
+            {
+                remove.disabled = false;
+                entriesMessage.textContent = "Could not delete. Try again.";
+            }
+        });
+
+        actionCell.append(edit, remove);
+        row.append(nameCell, actionCell);
+        entriesBody.appendChild(row);
+    });
+
+    // teams that have an account but no picks in this league yet
+    const have = new Set(registered.map(function(team) { return team.id; }));
+
+    const available = Object.keys(names).filter(function(id) {
+        return !have.has(id);
+    }).sort(function(a, b) {
+        return names[a].localeCompare(names[b]);
+    });
+
+    addTeamSelect.textContent = "";
+
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = available.length === 0 ? "(no teams to add)" : "Choose a team";
+    addTeamSelect.appendChild(blank);
+
+    available.forEach(function(id) {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = names[id];
+        addTeamSelect.appendChild(option);
+    });
+}
+
+function adminRegisterUrl(teamId)
+{
+    return "register.html?id=" + encodeURIComponent(leagueId) + "&team=" + encodeURIComponent(teamId);
+}
+
+addTeamButton.addEventListener("click", function() {
+    entriesMessage.textContent = "";
+
+    if (addTeamSelect.value === "")
+    {
+        entriesMessage.textContent = "Choose a team first.";
+        return;
+    }
+
+    location.href = adminRegisterUrl(addTeamSelect.value);
+});
+
+/* =========================================================== league phase */
+
+savePhaseButton.addEventListener("click", async function() {
+    phaseMessage.classList.add("error");
+    phaseMessage.textContent = "";
+    savePhaseButton.disabled = true;
+
+    try
+    {
+        // older leagues stored "sign ups open" as true or false, saving moves them to a phase
+        await updateDoc(doc(db, "leagues", leagueId), { phase: collectPhase(phaseRadios), signupsOpen: deleteField() });
+
+        phaseMessage.classList.remove("error");
+        phaseMessage.textContent = "Phase saved.";
+    }
+    catch (err)
+    {
+        if (err.code === "permission-denied")
+        {
+            phaseMessage.textContent = "Firebase refused to save. Check that the new rules are published.";
+        }
+        else
+        {
+            phaseMessage.textContent = "Could not save the phase. Try again.";
+        }
+    }
+
+    savePhaseButton.disabled = false;
+});
 
 /* =========================================================== player groups */
 

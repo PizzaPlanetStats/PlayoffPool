@@ -5,11 +5,9 @@ import { auth, db, isAdmin, onAuthStateChanged } from "./firebase.js";
 import {
     doc,
     getDoc,
-    updateDoc,
-    deleteField
+    updateDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { SKATER_STATS, GOALIE_STATS } from "./stats.js";
-import { leaguePhase } from "./phases.js";
 import {
     buildRows,
     collectScoring,
@@ -20,10 +18,7 @@ import {
     fillPlayoffTeams,
     buildPredictionPoints,
     collectPredictionPoints,
-    fillPredictionPoints,
-    buildPhaseChoices,
-    collectPhase,
-    fillPhase
+    fillPredictionPoints
 } from "./leagueForm.js";
 
 const checking = document.getElementById("checking");
@@ -38,7 +33,6 @@ const submitButton = document.getElementById("submit");
 const rows = [];
 const teamSelects = [];
 const predictionInputs = [];
-const phaseRadios = [];
 const leagueId = new URLSearchParams(location.search).get("id");
 let loaded = false;
 
@@ -46,7 +40,6 @@ buildRows(document.getElementById("skater-body"), "skaters", SKATER_STATS, rows)
 buildRows(document.getElementById("goalie-body"), "goalies", GOALIE_STATS, rows);
 buildPlayoffTeams(document.getElementById("playoff-teams"), teamSelects);
 buildPredictionPoints(document.getElementById("prediction-points"), predictionInputs);
-buildPhaseChoices(document.getElementById("league-phase"), phaseRadios);
 
 onAuthStateChanged(auth, async function(user) {
     if (!(user && await isAdmin(user)))
@@ -103,7 +96,6 @@ async function loadLeague()
     // leagues made before names existed get a suggested name
     nameInput.value = data.name || (data.year + " League");
     yearInput.value = data.year;
-    fillPhase(phaseRadios, leaguePhase(data));
     fillScoring(rows, data.scoring || {});
     fillPlayoffTeams(teamSelects, data.playoffTeams || []);
     fillPredictionPoints(predictionInputs, data.predictionPoints);
@@ -162,15 +154,6 @@ form.addEventListener("submit", async function(event) {
         if (prediction.points)
         {
             changes.predictionPoints = prediction.points;
-        }
-
-        // older leagues stored "sign ups open" as true or false, saving moves them to a phase
-        const phase = collectPhase(phaseRadios);
-
-        if (phase)
-        {
-            changes.phase = phase;
-            changes.signupsOpen = deleteField();
         }
 
         await updateDoc(doc(db, "leagues", leagueId), changes);

@@ -4,6 +4,9 @@
 
 import { db } from "./firebase.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { auth, onAuthStateChanged } from "./team.js";
+import { loadStandings } from "./leagueStandings.js";
+import { formatPoints } from "./standings.js";
 import { SKATER_STATS, GOALIE_STATS } from "./stats.js";
 import { renderBracket } from "./bracket.js";
 import { phaseInfo, leaguePhase } from "./phases.js";
@@ -14,6 +17,12 @@ const leagueArea = document.getElementById("league");
 const leagueName = document.getElementById("league-name");
 const registrationText = document.getElementById("registration-text");
 const signupPlaceholder = document.getElementById("signup-placeholder");
+const standingsStatus = document.getElementById("standings-status");
+const standingsBox = document.getElementById("standings");
+
+let currentUser = null;
+let phase = "created";
+let standingsRows = null;   // the ranked teams, once they have loaded (only after the league has started)
 
 const leagueId = new URLSearchParams(location.search).get("id");
 
@@ -53,7 +62,9 @@ async function loadLeague()
     leagueName.textContent = name;
     document.title = name + " - Pizza Planet";
 
-    renderPhase(leaguePhase(data));
+    phase = leaguePhase(data);
+    renderPhase(phase);
+    startStandings(data);
 
     const scoring = data.scoring || {};
     renderRules(document.getElementById("skater-rules"), SKATER_STATS, scoring.skaters || {}, "No player stats are tracked.");
@@ -80,6 +91,7 @@ function renderPhase(phase)
         signupPlaceholder.textContent = "";
 
         const register = document.createElement("a");
+        register.id = "register-button";
         register.className = "btn";
         register.href = "register.html?id=" + encodeURIComponent(leagueId);
         register.textContent = "Register";
@@ -190,4 +202,191 @@ function renderPredictionRules(container, saved)
     note.className = "hint";
     note.textContent = ONE_ROUND_OFF_RULE;
     container.appendChild(note);
+}
+
+/* =========================================================== standings and "my picks" */
+
+// Other teams' picks stay private until the league has started (see firestore.rules), so the standings only exist then.
+// Before that a registered team just gets a button to look at its own picks.
+function startStandings(league)
+{
+    if (phase === "ongoing" || phase === "ended")
+    {
+        standingsStatus.textContent = "Loading the standings...";
+
+        loadStandings(leagueId, league).then(function(result) {
+            standingsRows = result.rows;
+            drawStandings();
+        }).catch(function() {
+            standingsStatus.textContent = "Could not load the standings. Try again later.";
+        });
+    }
+    else
+    {
+        // nothing to show until the league starts
+        document.getElementById("standings-box").classList.add("hidden");
+    }
+
+    onAuthStateChanged(auth, function(user) {
+        currentUser = user;
+
+        if (standingsRows !== null)
+        {
+            drawStandings();
+        }
+
+        if (phase !== "ongoing" && phase !== "ended")
+        {
+            showMyPicksButton(user);
+        }
+    });
+}
+
+// a signed-in team that has registered gets "View My Picks" (and the Register button becomes "Edit Registration")
+async function showMyPicksButton(user)
+{
+    const old = document.getElementById("my-picks-button");
+
+    if (old)
+    {
+        old.remove();
+    }
+
+    if (!user)
+    {
+        return;
+    }
+
+    let registered = false;
+
+    try
+    {
+        registered = (await getDoc(doc(db, "leagues", leagueId, "entries", user.uid))).exists();
+    }
+    catch (err)
+    {
+        return;   // the admin account and anyone without a team just don't get the button
+    }
+
+    if (!registered || user !== currentUser)
+    {
+        return;
+    }
+
+    const registerButton = document.getElementById("register-button");
+
+    if (registerButton)
+    {
+        registerButton.textContent = "Edit Registration";
+    }
+
+    const link = document.createElement("a");
+    link.id = "my-picks-button";
+    link.className = "btn";
+    link.href = teamPageUrl(user.uid);
+    link.textContent = "View My Picks";
+
+    signupPlaceholder.appendChild(document.createTextNode(" "));
+    signupPlaceholder.appendChild(link);
+    signupPlaceholder.classList.remove("hidden");
+}
+
+function teamPageUrl(uid)
+{
+    return "leagueTeam.html?id=" + encodeURIComponent(leagueId) + "&team=" + encodeURIComponent(uid);
+}
+
+const COLUMNS = [
+    { title: "Place", tip: "Place in the standings", value: function(row) { return row.place; } },
+    { title: "P",     tip: "Total points",           value: function(row) { return formatPoints(row.total); } },
+    { title: "PP",    tip: "Player points",          value: function(row) { return formatPoints(row.playerPoints); } },
+    { title: "GP",    tip: "Goalie points",          value: function(row) { return formatPoints(row.goaliePoints); } },
+    { title: "TP",    tip: "Team (bracket prediction) points", value: function(row) { return formatPoints(row.teamPoints); } },
+    { title: "PR",    tip: "Players remaining",      value: function(row) { return row.playersRemaining; } },
+    { title: "GR",    tip: "Goalies remaining",      value: function(row) { return row.goaliesRemaining; } }
+];
+
+function drawStandings()
+{
+    standingsBox.textContent = "";
+
+    if (standingsRows.length === 0)
+    {
+        standingsStatus.textContent = "No teams registered.";
+        return;
+    }
+
+    standingsStatus.textContent = "";
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "scroll";
+
+    const table = document.createElement("table");
+    table.className = "stats standings";
+
+    const head = document.createElement("thead");
+    const headRow = document.createElement("tr");
+
+    const teamHead = document.createElement("th");
+    teamHead.textContent = "Team";
+    headRow.appendChild(teamHead);
+
+    COLUMNS.forEach(function(column) {
+        const th = document.createElement("th");
+        th.className = "num";
+        th.textContent = column.title;
+        th.title = column.tip;
+        headRow.appendChild(th);
+    });
+
+    head.appendChild(headRow);
+    table.appendChild(head);
+
+    const body = document.createElement("tbody");
+
+    standingsRows.forEach(function(row) {
+        const tr = document.createElement("tr");
+        const nameCell = document.createElement("td");
+
+        const teamRow = document.createElement("div");
+        teamRow.className = "team-row";
+
+        // logos are PNG files in the project root named TEAMID.png
+        const logoBox = document.createElement("span");
+        logoBox.className = "thumb-box";
+        const logo = document.createElement("img");
+        logo.alt = "";
+        logo.loading = "lazy";
+        logo.addEventListener("error", function() { logo.remove(); });
+        logo.src = encodeURIComponent(row.uid) + ".png";
+        logoBox.appendChild(logo);
+
+        const nameText = document.createElement("span");
+        const link = document.createElement("a");
+        link.href = teamPageUrl(row.uid);
+        link.textContent = row.name;
+        nameText.appendChild(link);
+
+        if (currentUser && currentUser.uid === row.uid)
+        {
+            nameText.appendChild(document.createTextNode(" (you)"));
+        }
+
+        teamRow.append(logoBox, nameText);
+        nameCell.appendChild(teamRow);
+        tr.appendChild(nameCell);
+
+        COLUMNS.forEach(function(column) {
+            const td = document.createElement("td");
+            td.className = "num";
+            td.textContent = column.value(row);
+            tr.appendChild(td);
+        });
+
+        body.appendChild(tr);
+    });
+
+    table.appendChild(body);
+    wrapper.appendChild(table);
+    standingsBox.appendChild(wrapper);
 }
