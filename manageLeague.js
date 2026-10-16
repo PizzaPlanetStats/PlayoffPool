@@ -17,12 +17,14 @@ import {
     deleteField,
     deleteDoc,
     collection,
-    getDocs
+    getDocs,
+    setDoc,
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { NHL_TEAMS } from "./nhlTeams.js";
 import { renderBracket } from "./bracket.js";
-import { CHAMPION, normalizeCodes, cleanWinners, eliminationRounds } from "./bracketLogic.js";
+import { normalizeCodes, cleanWinners } from "./bracketLogic.js";
 import { leaguePhase } from "./phases.js";
+import { loadStandings } from "./leagueStandings.js";
 import { buildPhaseChoices, collectPhase, fillPhase } from "./leagueForm.js";
 import { loadPlayers, searchPlayers, normalizeName } from "./nhlPlayers.js";
 
@@ -41,6 +43,10 @@ const addTeamSelect = document.getElementById("add-team");
 const addTeamButton = document.getElementById("add-team-button");
 const entriesMessage = document.getElementById("entries-message");
 
+const statsSaved = document.getElementById("stats-saved");
+const saveStatsButton = document.getElementById("save-stats");
+const statsMessage = document.getElementById("stats-message");
+
 const phaseBox = document.getElementById("league-phase");
 const phaseMessage = document.getElementById("phase-message");
 const savePhaseButton = document.getElementById("save-phase");
@@ -54,19 +60,12 @@ const saveGroupsButton = document.getElementById("save-groups");
 
 const noTeamsNote = document.getElementById("no-teams-note");
 const resultsBox = document.getElementById("results-box");
-const statusBox = document.getElementById("status-box");
 const bracketBox = document.getElementById("bracket");
 const unsavedNote = document.getElementById("unsaved");
 const message = document.getElementById("message");
 const saveButton = document.getElementById("save");
-const statusBody = document.getElementById("status-body");
 
 const leagueId = new URLSearchParams(location.search).get("id");
-
-const names = {};
-NHL_TEAMS.forEach(function(team) {
-    names[team.code] = team.name;
-});
 
 const phaseRadios = [];
 let leagueYear = 0;
@@ -138,6 +137,9 @@ async function loadLeague()
     // ----- teams in the league -----
     loadEntries();
 
+    // ----- saved stats -----
+    showSavedDate();
+
     // ----- league phase -----
     buildPhaseChoices(phaseBox, phaseRadios);
     fillPhase(phaseRadios, leaguePhase(data));
@@ -153,7 +155,6 @@ async function loadLeague()
     if (codes.every(function(code) { return code === ""; }))
     {
         resultsBox.classList.add("hidden");
-        statusBox.classList.add("hidden");
         noTeamsNote.classList.remove("hidden");
         return;
     }
@@ -292,6 +293,79 @@ addTeamButton.addEventListener("click", function() {
     location.href = adminRegisterUrl(addTeamSelect.value);
 });
 
+/* =========================================================== saved stats */
+
+// Save Stats keeps a permanent copy of the picked players' stats and the final standings, at
+//   leagues/{id}/final/stats      { savedAt, players: [{ id, name, team, position, stats }] }
+//   leagues/{id}/final/standings  { savedAt, standings: [{ uid, name, place, total, playerPoints, ... }] }
+// Once the league has ended, the site reads that copy instead of asking the NHL, and it is what a leaderboard can use later.
+async function showSavedDate()
+{
+    statsSaved.textContent = "";
+
+    try
+    {
+        const snap = await getDoc(doc(db, "leagues", leagueId, "final", "stats"));
+        const when = snap.exists() && snap.data().savedAt && typeof snap.data().savedAt.toDate === "function" ? snap.data().savedAt.toDate() : null;
+
+        if (when)
+        {
+            statsSaved.textContent = "Last saved " + when.toLocaleString();
+        }
+    }
+    catch (err)
+    {
+        // nothing to show
+    }
+}
+
+saveStatsButton.addEventListener("click", async function() {
+    statsMessage.classList.add("error");
+    statsMessage.textContent = "";
+    saveStatsButton.disabled = true;
+
+    try
+    {
+        // work from the saved league, not from whatever is half-edited on this page
+        const leagueSnap = await getDoc(doc(db, "leagues", leagueId));
+        const result = await loadStandings(leagueId, leagueSnap.data(), { live: true });
+
+        if (!result.hasStats)
+        {
+            statsMessage.textContent = "No playoff stats came back from the NHL, so nothing was saved.";
+        }
+        else
+        {
+            const players = result.players.map(function(player) {
+                return { id: String(player.id), name: String(player.name), team: String(player.team || ""), position: String(player.position || ""), stats: player.stats };
+            });
+
+            const standings = result.rows.map(function(row) {
+                return {
+                    uid: row.uid, name: row.name, place: row.place, total: row.total,
+                    playerPoints: row.playerPoints, goaliePoints: row.goaliePoints, teamPoints: row.teamPoints,
+                    playersRemaining: row.playersRemaining, goaliesRemaining: row.goaliesRemaining
+                };
+            });
+
+            await setDoc(doc(db, "leagues", leagueId, "final", "stats"), { savedAt: serverTimestamp(), players: players });
+            await setDoc(doc(db, "leagues", leagueId, "final", "standings"), { savedAt: serverTimestamp(), standings: standings });
+
+            statsMessage.classList.remove("error");
+            statsMessage.textContent = "Stats saved.";
+            showSavedDate();
+        }
+    }
+    catch (err)
+    {
+        statsMessage.textContent = err.code === "permission-denied"
+            ? "Firebase refused to save. Check that the new rules are published."
+            : "Could not save the stats. Try again.";
+    }
+
+    saveStatsButton.disabled = false;
+});
+
 /* =========================================================== league phase */
 
 savePhaseButton.addEventListener("click", async function() {
@@ -380,7 +454,7 @@ async function loadNhlPlayers()
         }
         else
         {
-            nhlStatus.textContent = nhlPlayers.length + " NHL players loaded. Type a name in a group to find a player.";
+            nhlStatus.textContent = "";
         }
     }
     catch (err)
@@ -710,48 +784,6 @@ function pickWinner(index, code)
 function draw()
 {
     renderBracket(bracketBox, codes, { winners: winners, onPick: pickWinner });
-    renderTeamStatus();
-}
-
-// a row for each team: still playing, knocked out in a round, or champion
-function renderTeamStatus()
-{
-    const rounds = eliminationRounds(codes, winners);
-
-    statusBody.textContent = "";
-
-    codes.forEach(function(code, position) {
-        if (code === "")
-        {
-            return;
-        }
-
-        const row = document.createElement("tr");
-
-        const numberCell = document.createElement("td");
-        numberCell.textContent = position + 1;
-
-        const nameCell = document.createElement("td");
-        nameCell.textContent = names[code] || code;
-
-        const statusCell = document.createElement("td");
-
-        if (rounds[code] === CHAMPION)
-        {
-            statusCell.textContent = "Champion";
-        }
-        else if (rounds[code])
-        {
-            statusCell.textContent = "Knocked out in round " + rounds[code];
-        }
-        else
-        {
-            statusCell.textContent = "Still playing";
-        }
-
-        row.append(numberCell, nameCell, statusCell);
-        statusBody.appendChild(row);
-    });
 }
 
 saveButton.addEventListener("click", async function() {

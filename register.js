@@ -23,7 +23,7 @@ import {
 import { renderBracket } from "./bracket.js";
 import { MATCH_COUNT, normalizeCodes, cleanWinners } from "./bracketLogic.js";
 import { leaguePhase } from "./phases.js";
-import { loadPlayers, findPlayerByName, normalizeName } from "./nhlPlayers.js";
+import { loadKnownPlayers, findPlayerByName, normalizeName } from "./nhlPlayers.js";
 
 const status = document.getElementById("status");
 const registerArea = document.getElementById("register-area");
@@ -420,7 +420,7 @@ function collectPicks()
             if (elsewhere)
             {
                 const otherGroup = groups.find(function(g) { return g.id === elsewhere; });
-                return fail(name + " is already a choice in group " + (groups.indexOf(otherGroup) + 1) + ", so you can't enter them in " + group.name
+                return fail(name + " is already a choice in the group " + (groups.indexOf(otherGroup) + 1) + ", so you can't enter them in " + group.name
                     + ". Pick them in that group, or pick someone else.", selection.card);
             }
 
@@ -450,27 +450,40 @@ function collectPicks()
     return { picks: picks, customNames: others.map(function(other) { return other.name; }) };
 }
 
-// custom players that don't show up in the NHL data. This is only a warning, never a block,
-// and if the NHL data can't be loaded there is simply no warning.
-async function findUnknownPlayers(customNames)
+// The "Other" players are checked against the NHL's rosters. Real ones get their NHL id, team and position saved with the pick
+// (that is how the team page knows which team they play for). Anyone who isn't found is only a warning, never a block.
+// Returns { unknown: [names], failed: true if the NHL list couldn't be loaded }.
+async function checkCustomPlayers(picks)
 {
-    try
-    {
-        const players = await loadPlayers(leagueYear);
+    const players = await loadKnownPlayers(leagueYear);
+    const unknown = [];
 
-        if (players.length === 0)
+    if (players.length === 0)
+    {
+        return { unknown: [], failed: true };
+    }
+
+    Object.keys(picks).forEach(function(groupId) {
+        const pick = picks[groupId];
+
+        if (pick.type !== "other")
         {
-            return [];
+            return;
         }
 
-        return customNames.filter(function(name) {
-            return !findPlayerByName(players, name);
-        });
-    }
-    catch (err)
-    {
-        return [];
-    }
+        const found = findPlayerByName(players, pick.name);
+
+        if (found)
+        {
+            picks[groupId] = { type: "other", name: found.name, id: found.id, team: found.team, position: found.position };
+        }
+        else
+        {
+            unknown.push(pick.name);
+        }
+    });
+
+    return { unknown: unknown, failed: false };
 }
 
 submitButton.addEventListener("click", async function() {
@@ -496,24 +509,31 @@ submitButton.addEventListener("click", async function() {
             submitMessage.classList.remove("error");
             submitMessage.textContent = "Checking players...";
 
-            const unknown = await findUnknownPlayers(result.customNames);
+            const check = await checkCustomPlayers(result.picks);
 
             submitMessage.textContent = "";
             submitMessage.classList.add("error");
 
-            if (unknown.length > 0)
+            const list = (check.failed ? result.customNames : check.unknown).map(function(name) { return "\"" + name + "\""; }).join(", ");
+            let go = true;
+
+            if (check.failed)
             {
-                const list = unknown.map(function(name) { return "\"" + name + "\""; }).join(", ");
-                const go = confirm(list + (unknown.length === 1 ? " doesn't" : " don't")
+                go = confirm("The NHL player list couldn't be loaded, so there is no way to check that " + list
+                    + " (Other) can be found on an NHL team.\n\nSubmit anyway?");
+            }
+            else if (check.unknown.length > 0)
+            {
+                go = confirm(list + (check.unknown.length === 1 ? " doesn't" : " don't")
                     + " appear on an NHL team's roster, so they may not be an NHL player.\n\n"
                     + "You can still submit them. Submit anyway?");
+            }
 
-                if (!go)
-                {
-                    submitButton.disabled = false;
-                    backButton.disabled = false;
-                    return;
-                }
+            if (!go)
+            {
+                submitButton.disabled = false;
+                backButton.disabled = false;
+                return;
             }
         }
 
@@ -565,7 +585,7 @@ function showDone()
     }
     else
     {
-        status.textContent = "Registration complete. You can change your picks at any time while registration is open. ";
+        status.textContent = "Registration complete! You can change your picks at any time while registration is open. ";
         link.href = "league.html?id=" + encodeURIComponent(leagueId);
         link.textContent = "Back to the league";
     }

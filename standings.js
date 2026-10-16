@@ -153,6 +153,13 @@ export function makeStatsLookup(docs)
     return lookup;
 }
 
+function findInList(nhl, name)
+{
+    const norm = normalizeName(name);
+
+    return Array.isArray(nhl) ? nhl.find(function(player) { return player.norm === norm; }) : null;
+}
+
 function findStats(lookup, id, name)
 {
     if (!lookup)
@@ -179,7 +186,7 @@ function pointsFor(stats, worth)
 
 // one line for each player group: who was picked, their NHL team, whether that team is still playing,
 // and the stats and points they have earned.
-export function describePicks(league, entry, actual, lookup)
+export function describePicks(league, entry, actual, lookup, nhl)
 {
     const groups = Array.isArray(league.playerGroups) ? league.playerGroups : [];
     const picks = entry && entry.players ? entry.players : {};
@@ -191,8 +198,8 @@ export function describePicks(league, entry, actual, lookup)
     return groups.map(function(group, index) {
         const pick = picks[group.id] || null;
         const result = {
-            group: "Group " + (index + 1), name: "", team: "", goalie: false, alive: null, outRound: 0,
-            other: false, hasStats: false, stats: {}, points: 0
+            group: "Group " + (index + 1), id: "", statDoc: null, name: "", team: "", goalie: false, alive: null, outRound: 0,
+            other: false, notReal: false, hasStats: false, stats: {}, points: 0
         };
 
         if (!pick)
@@ -202,14 +209,18 @@ export function describePicks(league, entry, actual, lookup)
 
         result.name = String(pick.name || "");
 
-        const pickId = String(pick.id || "");
+        // an "Other" pick made before the NHL team was saved with it: find the player in the NHL's list by name
+        const known = pick.type === "other" && !pick.team ? findInList(nhl, result.name) : null;
+        const pickId = String(pick.id || (known ? known.id : ""));
         const saved = findStats(lookup, pickId, result.name);
+        result.id = pickId;
+        result.statDoc = saved;
 
         if (pick.type === "other")
         {
             result.other = true;
-            result.team = saved && saved.team ? String(saved.team) : "";
-            result.goalie = Boolean(saved) && saved.position === "G";
+            result.team = String(pick.team || (known && known.team) || (saved && saved.team) || "");
+            result.goalie = pick.position === "G" || Boolean(known && known.position === "G") || Boolean(saved && saved.position === "G");
         }
         else
         {
@@ -232,9 +243,11 @@ export function describePicks(league, entry, actual, lookup)
         }
         else
         {
-            // a team that isn't in the playoffs, or no NHL team at all (not a real player): counts as out in round 1
+            // a team that isn't in the playoffs counts as out in round 1.
+            // No NHL team at all means not a real player: no round, shown in gray.
             result.alive = false;
-            result.outRound = 1;
+            result.notReal = result.team === "";
+            result.outRound = result.notReal ? 0 : 1;
         }
 
         if (saved)
@@ -243,6 +256,11 @@ export function describePicks(league, entry, actual, lookup)
             result.stats = saved.stats;
             result.points = pointsFor(saved.stats, result.goalie ? (scoring.goalies || {}) : (scoring.skaters || {}));
         }
+        else if (lookup && lookup.count > 0)
+        {
+            // the stats list loaded but this player isn't in it: they haven't played in the playoffs, so every stat is 0
+            result.hasStats = true;
+        }
 
         return result;
     });
@@ -250,10 +268,11 @@ export function describePicks(league, entry, actual, lookup)
 
 // everything the standings table and a team's page need for one team.
 // lookup = makeStatsLookup(...) of the saved player stats, or null before the first stats update
-export function buildRow(league, entry, lookup)
+// nhl = the NHL player list (see nhlPlayers.js), used to find the team of "Other" picks that were saved without one; may be null
+export function buildRow(league, entry, lookup, nhl)
 {
     const actual = actualRounds(league);
-    const picks = describePicks(league, entry, actual, lookup);
+    const picks = describePicks(league, entry, actual, lookup, nhl);
     const prediction = predictionMarks(league, entry && entry.bracket ? entry.bracket.winners : []);
 
     const sum = function(list) {

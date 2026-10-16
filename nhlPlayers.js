@@ -132,3 +132,65 @@ export async function loadPlayoffTotals(playerId, year)
 
     return rows.length > 0 ? rows[0] : null;
 }
+
+// every NHL player a name can be checked against: the rosters of the league's season first, then today's rosters
+// (so someone who has since moved, or a new player, is still found). Never throws. An empty list means the NHL list could not be loaded.
+export async function loadKnownPlayers(year)
+{
+    const results = await Promise.allSettled([loadPlayers(year), loadPlayers()]);
+    const all = [];
+
+    results.forEach(function(result) {
+        if (result.status === "fulfilled")
+        {
+            result.value.forEach(function(player) {
+                all.push(player);
+            });
+        }
+        else
+        {
+            console.warn("NHL player list problem:", result.reason);
+        }
+    });
+
+    return all;
+}
+
+// every skater's and goalie's playoff stats for one season, from the Worker (which asks the NHL and keeps the answer 15 minutes
+// while that season is on). "year" is the year the playoffs end in. Resolves to { players: [{ id, name, team, position, stats }], generatedAt }.
+// Throws if the Worker can't be reached.
+const statLists = {};
+
+export function loadPlayoffStats(year)
+{
+    const key = String(year);
+
+    if (!statLists[key])
+    {
+        if (!proxyReady())
+        {
+            return Promise.reject(new Error("The NHL proxy address isn't set yet (see nhlConfig.js)."));
+        }
+
+        statLists[key] = fetch(NHL_PROXY + "/playoff-stats?season=" + encodeURIComponent(year))
+            .then(async function(response) {
+                if (!response.ok)
+                {
+                    throw new Error("The playoff stats aren't available (" + response.status + ").");
+                }
+
+                const body = await response.json();
+
+                return {
+                    players: Array.isArray(body.players) ? body.players : [],
+                    generatedAt: body.generatedAt ? new Date(body.generatedAt) : null
+                };
+            })
+            .catch(function(err) {
+                delete statLists[key];   // so the next try asks again
+                throw err;
+            });
+    }
+
+    return statLists[key];
+}

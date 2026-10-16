@@ -2,13 +2,20 @@
 // Only works once the league has started (phase ongoing or ended): before that the rules keep other teams' picks private.
 
 import { db } from "./firebase.js";
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { collection, getDocs, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { buildRow, rankRows, makeStatsLookup } from "./standings.js";
+import { loadKnownPlayers, loadPlayoffStats } from "./nhlPlayers.js";
+import { leaguePhase } from "./phases.js";
 
-// returns { rows, updated, hasStats }. rows is ranked: [{ uid, name, place, total, playerPoints, goaliePoints, teamPoints, playersRemaining, goaliesRemaining, picks, entry }]
+// While the league is on, the stats come live from the Worker. Once the league has ended and the admin has pressed Save Stats,
+// the saved copy at leagues/{id}/final/stats is used instead (one read, and it can't change if the NHL's data does).
+// Pass { live: true } to ignore the saved copy (the Save Stats button does).
+//
+// returns { rows, updated, hasStats, saved, players }. rows is ranked: [{ uid, name, place, total, playerPoints, goaliePoints, teamPoints, playersRemaining, goaliesRemaining, picks, entry }]
 // "updated" is when the stats were last updated (or null). Throws if the entries can't be read.
-export async function loadStandings(leagueId, league)
+export async function loadStandings(leagueId, league, options)
 {
+    const live = Boolean(options && options.live);
     const entries = await getDocs(collection(db, "leagues", leagueId, "entries"));
 
     // team names are public. If they can't be read the rows just say "(unknown team)".
@@ -26,36 +33,56 @@ export async function loadStandings(leagueId, league)
         // keep going without names
     }
 
-    // the stats saved by the stats update, one document for each player picked in this league.
-    // Nothing is there before the first update.
-    const statDocs = [];
+    let statDocs = [];
     let updated = null;
+    let saved = false;
 
-    try
+    // the saved copy, for a league that has ended
+    if (!live && leaguePhase(league) === "ended")
     {
-        const saved = await getDocs(collection(db, "leagues", leagueId, "stats"));
+        try
+        {
+            const snap = await getDoc(doc(db, "leagues", leagueId, "final", "stats"));
 
-        saved.forEach(function(statDoc) {
-            const data = statDoc.data();
-            statDocs.push(data);
-
-            const when = data.updatedAt && typeof data.updatedAt.toDate === "function" ? data.updatedAt.toDate() : null;
-
-            if (when && (!updated || when > updated))
+            if (snap.exists() && Array.isArray(snap.data().players))
             {
-                updated = when;
+                statDocs = snap.data().players;
+                const when = snap.data().savedAt;
+                updated = when && typeof when.toDate === "function" ? when.toDate() : null;
+                saved = true;
             }
-        });
+        }
+        catch (err)
+        {
+            console.warn("Saved stats problem:", err);
+        }
     }
-    catch (err)
+
+    // otherwise every player's playoff stats for this league's season, from the Worker (it asks the NHL and refreshes every 15 minutes).
+    // If it can't be loaded the stats just show as dashes.
+    if (!saved)
     {
-        // keep going: the stats just show as not updated yet
+        try
+        {
+            const stats = await loadPlayoffStats(league.year);
+
+            statDocs = stats.players;
+            updated = stats.generatedAt;
+        }
+        catch (err)
+        {
+            console.warn("Playoff stats problem:", err);
+        }
     }
 
     const lookup = makeStatsLookup(statDocs);
 
+    // the NHL list finds the team of "Other" picks. If it can't be loaded those players just show without a team.
+    // (A saved copy already has the team of every picked player, so it isn't needed then.)
+    const nhl = saved ? [] : await loadKnownPlayers(league.year);
+
     const rows = entries.docs.map(function(entryDoc) {
-        const row = buildRow(league, entryDoc.data(), lookup);
+        const row = buildRow(league, entryDoc.data(), lookup, nhl);
 
         row.uid = entryDoc.id;
         row.entry = entryDoc.data();
@@ -63,5 +90,17 @@ export async function loadStandings(leagueId, league)
         return row;
     });
 
-    return { rows: rankRows(rows), updated: updated, hasStats: lookup.count > 0 };
+    // the stat lines of the players that were actually picked (what Save Stats keeps)
+    const picked = new Map();
+
+    rows.forEach(function(row) {
+        row.picks.forEach(function(pick) {
+            if (pick.statDoc)
+            {
+                picked.set(String(pick.statDoc.id) + "|" + pick.statDoc.name, pick.statDoc);
+            }
+        });
+    });
+
+    return { rows: rankRows(rows), updated: updated, hasStats: lookup.count > 0, saved: saved, players: Array.from(picked.values()) };
 }

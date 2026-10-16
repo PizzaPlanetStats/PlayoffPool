@@ -1037,3 +1037,18 @@ table.pick-table td:first-child
   padding-left: 2px;
   padding-right: 2px;
 }
+
+
+/* a pick that is not a real NHL player */
+table.stats tr.not-real td
+{
+  background: #cfcfcf;
+}
+
+
+/* manage page: green "Stats saved." message */
+#stats-message:not(.error)
+{
+  color: #1a6e00;
+  font-weight: bold;
+}

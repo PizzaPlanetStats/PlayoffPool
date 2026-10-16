@@ -15,6 +15,7 @@ import { leaguePhase } from "./phases.js";
 import { buildRow, formatPoints, makeStatsLookup, SHORT_LABELS } from "./standings.js";
 import { SKATER_STATS, GOALIE_STATS } from "./stats.js";
 import { loadStandings } from "./leagueStandings.js";
+import { loadKnownPlayers } from "./nhlPlayers.js";
 
 const status = document.getElementById("status");
 const teamArea = document.getElementById("team-area");
@@ -155,7 +156,7 @@ async function show(user)
 
             if (entrySnap.exists())
             {
-                row = buildRow(league, entrySnap.data(), null);
+                row = buildRow(league, entrySnap.data(), null, await loadKnownPlayers(league.year));
                 row.entry = entrySnap.data();
             }
         }
@@ -274,7 +275,11 @@ function drawPickTable(container, picks, statList, worth, firstTitle, emptyText)
     picks.forEach(function(pick) {
         const tr = document.createElement("tr");
 
-        if (pick.outRound >= 1 && pick.outRound <= 4)
+        if (pick.notReal)
+        {
+            tr.className = "not-real";
+        }
+        else if (pick.outRound >= 1 && pick.outRound <= 4)
         {
             tr.className = "elim-" + pick.outRound;
         }
