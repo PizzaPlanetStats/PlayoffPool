@@ -34,7 +34,7 @@ export function loadPlayers(year)
             return Promise.reject(new Error("The NHL proxy address isn't set yet (see nhlConfig.js)."));
         }
 
-        lists[key] = fetch(NHL_PROXY + "/players?v=2" + (year ? "&season=" + encodeURIComponent(year) : ""))
+        lists[key] = fetch(NHL_PROXY + "/players?v=3" + (year ? "&season=" + encodeURIComponent(year) : ""))
             .then(async function(response) {
                 if (!response.ok)
                 {
