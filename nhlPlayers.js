@@ -34,7 +34,7 @@ export function loadPlayers(year)
             return Promise.reject(new Error("The NHL proxy address isn't set yet (see nhlConfig.js)."));
         }
 
-        lists[key] = fetch(NHL_PROXY + "/players" + (year ? "?season=" + encodeURIComponent(year) : ""))
+        lists[key] = fetch(NHL_PROXY + "/players?v=2" + (year ? "&season=" + encodeURIComponent(year) : ""))
             .then(async function(response) {
                 if (!response.ok)
                 {
@@ -156,7 +156,7 @@ export async function loadKnownPlayers(year)
     return all;
 }
 
-// every skater's and goalie's playoff stats for one season, from the Worker (which asks the NHL and keeps the answer 15 minutes
+// every skater's and goalie's playoff stats for one season, from the Worker (which asks the NHL and keeps the answer 5 minutes
 // while that season is on). "year" is the year the playoffs end in. Resolves to { players: [{ id, name, team, position, stats }], generatedAt }.
 // Throws if the Worker can't be reached.
 const statLists = {};
