@@ -61,7 +61,7 @@ async function load()
             item.standings.forEach(function(row) {
                 entries.push({
                     uid: String(row.uid), name: names[row.uid] || String(row.name || "(unknown team)"), suffix: suffixes[row.uid] || "",
-                    leagueId: item.league.id, leagueName: leagueName, place: Number(row.place) || 0,
+                    leagueId: item.league.id, leagueName: leagueName, year: Number(data.year) || 0, place: Number(row.place) || 0,
                     total: Number(row.total) || 0, playerPoints: Number(row.playerPoints) || 0,
                     goaliePoints: Number(row.goaliePoints) || 0, teamPoints: Number(row.teamPoints) || 0
                 });
@@ -127,7 +127,7 @@ function draw(entries)
 
     addGroup("Single Season", KINDS.map(function(kind) {
         return makeBoard(kind.label, entries.map(function(e) {
-            return { uid: e.uid, name: e.name, suffix: e.suffix, league: e.leagueName, leagueId: e.leagueId, value: e[kind.key] };
+            return { uid: e.uid, name: e.name, suffix: e.suffix, league: e.year ? String(e.year) : e.leagueName, leagueId: e.leagueId, value: e[kind.key] };
         }), "League", formatPoints);
     }));
 
@@ -203,7 +203,7 @@ function makeBoard(title, items, extraTitle, format, valueLabel)
 
     if (extraTitle === "League")
     {
-        th("League", "");
+        th("Year", "num");
     }
 
     extraCols.forEach(function(title) { th(title, "num"); });
@@ -260,7 +260,7 @@ function makeBoard(title, items, extraTitle, format, valueLabel)
 
             if (extraTitle === "League")
             {
-                const leagueCell = td("");
+                const leagueCell = td("num");
                 const leagueLink = document.createElement("a");
                 leagueLink.href = "league.html?id=" + encodeURIComponent(item.leagueId);
                 leagueLink.textContent = item.league;
