@@ -122,7 +122,7 @@ function draw(entries)
         }), "Leagues", formatPoints);
     }));
 
-    addGroup("Average All Leagues", KINDS.map(function(kind) {
+    addGroup("Average Points", KINDS.map(function(kind) {
         return makeBoard(kind.label, teams.map(function(t) {
             return { uid: t.uid, name: t.name, extra: String(t.leagues), value: t[kind.key] / t.leagues };
         }), "Leagues", formatPoints);
