@@ -12,6 +12,8 @@ export const ACHIEVEMENTS = [
   { id: "insiderTrader",    name: "Insider Trader",                  description: "Win 10 Playoff Pools." },
   { id: "dynasty",          name: "Dynasty",                         description: "Win 2 Playoff Pools in a row." },
   { id: "greatOne",         name: "The Great One",                   description: "Combine for a total of 894 goals in all seasons combined." },
+  { id: "ronHextall",       name: "Ron Hextall",                     description: "Have a goalie on your team score a goal." },
+  { id: "mcDavidsLegacy",   name: "McDavid's Legacy",                description: "Achieve second place two years in a row." },
   { id: "ultimateRegain",   name: "The Ultimate Regain",             description: "Get last place in a season, then win the following year." },
   { id: "oracle",           name: "Oracle",                          description: "Correctly predict all first round matches." },
   { id: "allSeeing",        name: "All Seeing",                      description: "Correctly predict all team eliminations within 1 round in a season." },

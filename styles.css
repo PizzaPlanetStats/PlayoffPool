@@ -1095,3 +1095,4 @@ table.league-table tr:nth-child(even) td { background: #fff; }
 table.league-table tr.place-1 td { background: #f7e08c; }
 table.league-table tr.place-2 td { background: #dfe3e8; }
 table.league-table tr.place-3 td { background: #e9bd91; }
+.board-more { margin: 8px 0 0; }

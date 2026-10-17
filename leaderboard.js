@@ -164,7 +164,7 @@ function addGroup(title, boards)
     boardsArea.appendChild(box);
 }
 
-// A table of the top 20. Clicking the value heading switches between best first and worst first.
+// A table of the top 20 (a button shows the whole list when there are more). Clicking the value heading switches between best first and worst first.
 function makeBoard(title, items, extraTitle, format, valueLabel)
 {
     const wrap = document.createElement("div");
@@ -215,6 +215,7 @@ function makeBoard(title, items, extraTitle, format, valueLabel)
     wrap.appendChild(table);
 
     let best = true;
+    let showAll = false;
 
     // every item with its real place (1 = best), so the worst view counts down from the bottom
     const ranked = items.slice().sort(function(a, b) {
@@ -227,7 +228,7 @@ function makeBoard(title, items, extraTitle, format, valueLabel)
 
     function render()
     {
-        const sorted = (best ? ranked : ranked.slice().reverse()).slice(0, TOP);
+        const sorted = (best ? ranked : ranked.slice().reverse()).slice(0, showAll ? ranked.length : TOP);
 
         valueHead.textContent = (best ? "▼" : "▲") + " " + (valueLabel || "Pts");
         body.textContent = "";
@@ -274,6 +275,25 @@ function makeBoard(title, items, extraTitle, format, valueLabel)
     {
         best = !best;
         render();
+    }
+
+    // a longer list can be opened up in full, to find where you are in the middle of it
+    if (items.length > TOP)
+    {
+        const more = document.createElement("button");
+        more.type = "button";
+        more.className = "btn small";
+        more.textContent = "Show All";
+        more.addEventListener("click", function() {
+            showAll = !showAll;
+            more.textContent = showAll ? "Show Top " + TOP : "Show All";
+            render();
+        });
+
+        const moreWrap = document.createElement("p");
+        moreWrap.className = "board-more";
+        moreWrap.appendChild(more);
+        wrap.appendChild(moreWrap);
     }
 
     valueHead.addEventListener("click", flip);
