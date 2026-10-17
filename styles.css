@@ -1053,3 +1053,30 @@ table.stats tr.not-real td
   color: #1a6e00;
   font-weight: bold;
 }
+
+/* leaderboards */
+.board-grid
+{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 8px 28px;
+}
+
+.board .sub-title { margin: 14px 0 8px; }
+
+table.board-table { width: 100%; }
+table.board-table th.num,
+table.board-table td.num { text-align: center; width: 64px; }
+table.board-table th.sortable { cursor: pointer; user-select: none; width: 90px; }
+table.board-table th.sortable:hover { color: #fff; }
+
+@media (max-width: 480px)
+{
+  .board-grid { grid-template-columns: 1fr; }
+}
+
+#boards > .box > h3
+{
+  padding: 5px 10px;
+  font-size: 26px;
+}
