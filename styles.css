@@ -362,6 +362,7 @@ table.stats th {
   color: var(--lime);
 }
 table.stats tr:nth-child(even) td { background: #eef; }
+table.pick-table tr:nth-child(even) td { background: #fff; }
 
 .id-cell {
   font-family: "Courier New", Courier, monospace;
