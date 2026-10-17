@@ -4,6 +4,7 @@
 
 import { db } from "./firebase.js";
 import { auth, onAuthStateChanged } from "./team.js";
+import { appendSuffix } from "./suffixes.js";
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { leaguePhase, phaseInfo } from "./phases.js";
 
@@ -29,12 +30,6 @@ onAuthStateChanged(auth, function(user) {
 
     // no need to offer sign up to someone who is already signed in
     signupPrompt.classList.toggle("hidden", Boolean(user));
-
-    // redraw so the signed-in team gets its "(you)" mark
-    if (teams !== null)
-    {
-        renderTeams();
-    }
 });
 
 loadLeagues();
@@ -148,7 +143,8 @@ async function loadTeams()
         teams = snapshot.docs.map(function(teamDoc) {
             return {
                 id: teamDoc.id,
-                name: String(teamDoc.data().teamName || "(no name)")
+                name: String(teamDoc.data().teamName || "(no name)"),
+                suffix: String(teamDoc.data().suffix || "")
             };
         });
     }
@@ -209,12 +205,7 @@ function renderTeams()
         link.href = "user.html?id=" + encodeURIComponent(team.id);
         link.textContent = team.name;
         nameText.appendChild(link);
-
-        // mark the signed-in team's own row
-        if (currentUser && currentUser.uid === team.id)
-        {
-            nameText.appendChild(document.createTextNode(" (you)"));
-        }
+        appendSuffix(nameText, team.suffix);
 
         teamRow.appendChild(nameText);
 

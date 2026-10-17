@@ -7,6 +7,7 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase
 import { auth, onAuthStateChanged } from "./team.js";
 import { loadStandings } from "./leagueStandings.js";
 import { formatPoints } from "./standings.js";
+import { appendSuffix } from "./suffixes.js";
 import { SKATER_STATS, GOALIE_STATS } from "./stats.js";
 import { renderBracket } from "./bracket.js";
 import { phaseInfo, leaguePhase } from "./phases.js";
@@ -366,11 +367,7 @@ function drawStandings()
         link.href = teamPageUrl(row.uid);
         link.textContent = row.name;
         nameText.appendChild(link);
-
-        if (currentUser && currentUser.uid === row.uid)
-        {
-            nameText.appendChild(document.createTextNode(" (you)"));
-        }
+        appendSuffix(nameText, row.suffix);
 
         teamRow.append(logoBox, nameText);
         nameCell.appendChild(teamRow);

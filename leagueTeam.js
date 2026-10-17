@@ -12,6 +12,7 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase
 import { renderBracket } from "./bracket.js";
 import { normalizeCodes, cleanWinners } from "./bracketLogic.js";
 import { leaguePhase } from "./phases.js";
+import { appendSuffix } from "./suffixes.js";
 import { buildRow, formatPoints, makeStatsLookup, SHORT_LABELS } from "./standings.js";
 import { SKATER_STATS, GOALIE_STATS } from "./stats.js";
 import { loadStandings } from "./leagueStandings.js";
@@ -124,6 +125,7 @@ async function show(user)
 
     // the team's name (public) and its entry in this league
     let name = "(unknown team)";
+    let suffix = "";
 
     try
     {
@@ -132,6 +134,11 @@ async function show(user)
         if (teamSnap.exists() && teamSnap.data().teamName)
         {
             name = String(teamSnap.data().teamName);
+        }
+
+        if (teamSnap.exists() && teamSnap.data().suffix)
+        {
+            suffix = String(teamSnap.data().suffix);
         }
     }
     catch (err)
@@ -188,6 +195,7 @@ async function show(user)
 
     document.title = name + " - " + leagueName + " - Pizza Planet";
     teamName.textContent = name;
+    appendSuffix(teamName, suffix);
     teamSub.textContent = leagueName;
 
     // the logo is a PNG named TEAMID.png in the project root

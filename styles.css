@@ -1024,12 +1024,12 @@ table.pick-table td:first-child
 #standings table.standings
 {
   table-layout: fixed;
-  min-width: 560px;
+  min-width: 680px;
 }
 
 #standings table.standings th:first-child
 {
-  width: 34%;
+  width: 46%;
 }
 
 #standings table.standings th.num,
@@ -1096,3 +1096,52 @@ table.league-table tr.place-1 td { background: #f7e08c; }
 table.league-table tr.place-2 td { background: #dfe3e8; }
 table.league-table tr.place-3 td { background: #e9bd91; }
 .board-more { margin: 8px 0 0; }
+
+/* suffixes after team names */
+.suffix
+{
+  margin-left: 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.85em;
+  font-weight: bold;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.suffix-gold { color: #a87800; }
+.suffix-ach { color: #00796b; }
+
+.team-card .suffix-gold { color: #ffd24a; }
+.team-card .suffix-ach { color: #6ee7d8; }
+
+.team-name .suffix { font-size: 0.6em; }
+
+#suffix-message:not(.error) { color: #1a6e00; font-weight: bold; }
+
+form.simple select
+{
+  width: 100%;
+  box-sizing: border-box;
+  margin: 3px 0 10px;
+  padding: 6px;
+  font-size: 16px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* league team page: the suffix goes on its own line under the team name */
+#team-area .team-name .suffix
+{
+  display: block;
+  margin: 8px 0 0;
+  font-size: 0.55em;
+  letter-spacing: 0;
+}
+
+/* team page: the suffix goes on its own line under the team name */
+#profile .team-name .suffix
+{
+  display: block;
+  margin: 8px 0 0;
+  font-size: 0.55em;
+  letter-spacing: 0;
+}

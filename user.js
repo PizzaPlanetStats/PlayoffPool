@@ -2,10 +2,11 @@
 // Anyone can view a team. Only the signed-in owner sees the account settings.
 // Team names are user-typed, so they are only ever shown with textContent, never as HTML.
 
-import { auth, onAuthStateChanged, signOut, getProfile, getPublicTeam, updateTeamName, validTeamName, changePassword } from "./team.js";
+import { auth, onAuthStateChanged, signOut, getProfile, getPublicTeam, updateTeamName, validTeamName, changePassword, updateSuffix } from "./team.js";
 import { ACHIEVEMENTS } from "./achievements.js";
 import { loadSeasons, computeStats } from "./userStats.js";
 import { formatPoints } from "./standings.js";
+import { appendSuffix, suffixOptions, suffixLabel } from "./suffixes.js";
 
 const status = document.getElementById("status");
 const profileArea = document.getElementById("profile");
@@ -26,6 +27,12 @@ const leaguesBody = document.getElementById("leagues-body");
 const statsBox = document.getElementById("stats-box");
 const summaryStats = document.getElementById("summary-stats");
 const pointsStats = document.getElementById("points-stats");
+const suffixForm = document.getElementById("suffix-form");
+const suffixSelect = document.getElementById("suffix-select");
+const suffixMessage = document.getElementById("suffix-message");
+
+let currentName = "";
+let currentSuffix = "";
 
 const requestedId = new URLSearchParams(location.search).get("id");
 
@@ -118,13 +125,13 @@ async function showHistory(teamId)
     catch (err)
     {
         leaguesStatus.textContent = "Could not load the leagues. Try again later.";
-        return;
+        return [];
     }
 
     if (seasons.length === 0)
     {
         leaguesStatus.textContent = "No leagues played yet.";
-        return;
+        return seasons;
     }
 
     leaguesScroll.classList.remove("hidden");
@@ -173,6 +180,43 @@ async function showHistory(teamId)
     })));
 
     statsBox.classList.remove("hidden");
+
+    return seasons;
+}
+
+// the team name with its suffix after it
+function showName()
+{
+    teamHeading.textContent = currentName;
+    appendSuffix(teamHeading, currentSuffix);
+}
+
+// the dropdown in Account Settings: none, plus every suffix the team has earned
+function fillSuffixChoices(unlocked, seasons)
+{
+    suffixSelect.textContent = "";
+
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "None";
+    suffixSelect.appendChild(none);
+
+    const options = suffixOptions(unlocked, seasons);
+
+    // keep what is already chosen in the list even if it can't be worked out any more
+    if (currentSuffix !== "" && suffixLabel(currentSuffix) !== "" && !options.some(function(option) { return option.key === currentSuffix; }))
+    {
+        options.push({ key: currentSuffix, label: suffixLabel(currentSuffix) });
+    }
+
+    options.forEach(function(option) {
+        const element = document.createElement("option");
+        element.value = option.key;
+        element.textContent = option.label;
+        suffixSelect.appendChild(element);
+    });
+
+    suffixSelect.value = currentSuffix;
 }
 
 // a small table. head = list of column titles or null, rows = lists of text (the first column is the row title),
@@ -267,7 +311,9 @@ onAuthStateChanged(auth, async function(user) {
         return;
     }
 
-    teamHeading.textContent = profile.teamName;
+    currentName = profile.teamName;
+    currentSuffix = typeof profile.suffix === "string" ? profile.suffix : "";
+    showName();
     document.title = profile.teamName + " - Pizza Planet";
     showTeamLogo(teamId, profile.teamName);
 
@@ -276,7 +322,12 @@ onAuthStateChanged(auth, async function(user) {
 
     status.classList.add("hidden");
     profileArea.classList.remove("hidden");
-    showHistory(teamId);
+    showHistory(teamId).then(function(seasons) {
+        if (isOwner)
+        {
+            fillSuffixChoices(unlocked, seasons);
+        }
+    });
 
     // only the owner sees the account tools
     ownArea.classList.toggle("hidden", !isOwner);
@@ -303,7 +354,8 @@ renameForm.addEventListener("submit", async function(event) {
     try
     {
         await updateTeamName(auth.currentUser.uid, name);
-        teamHeading.textContent = name;
+        currentName = name;
+        showName();
         teamLogo.alt = name + " logo";
         document.title = name + " - Pizza Planet";
         message.classList.remove("error");
@@ -312,6 +364,27 @@ renameForm.addEventListener("submit", async function(event) {
     catch (err)
     {
         message.textContent = "Could not save the name. Regain";
+    }
+});
+
+suffixForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+    suffixMessage.classList.add("error");
+    suffixMessage.textContent = "";
+
+    try
+    {
+        await updateSuffix(auth.currentUser.uid, suffixSelect.value);
+        currentSuffix = suffixSelect.value;
+        showName();
+        suffixMessage.classList.remove("error");
+        suffixMessage.textContent = "Saved.";
+    }
+    catch (err)
+    {
+        suffixMessage.textContent = err.code === "permission-denied"
+            ? "Firebase refused to save. Check that the new rules are published."
+            : "Could not save the suffix. Try again.";
     }
 });
 

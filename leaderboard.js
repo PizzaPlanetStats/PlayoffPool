@@ -6,6 +6,7 @@ import { db } from "./firebase.js";
 import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { leaguePhase } from "./phases.js";
 import { formatPoints } from "./standings.js";
+import { appendSuffix } from "./suffixes.js";
 
 const status = document.getElementById("status");
 const boardsArea = document.getElementById("boards");
@@ -25,6 +26,7 @@ async function load()
 {
     let entries = [];   // one per team per ended league
     let names = {};
+    let suffixes = {};
 
     try
     {
@@ -42,7 +44,10 @@ async function load()
         try
         {
             const teams = await getDocs(collection(db, "teams"));
-            teams.forEach(function(teamDoc) { names[teamDoc.id] = String(teamDoc.data().teamName || ""); });
+            teams.forEach(function(teamDoc) {
+                names[teamDoc.id] = String(teamDoc.data().teamName || "");
+                suffixes[teamDoc.id] = String(teamDoc.data().suffix || "");
+            });
         }
         catch (err)
         {
@@ -55,7 +60,7 @@ async function load()
 
             item.standings.forEach(function(row) {
                 entries.push({
-                    uid: String(row.uid), name: names[row.uid] || String(row.name || "(unknown team)"),
+                    uid: String(row.uid), name: names[row.uid] || String(row.name || "(unknown team)"), suffix: suffixes[row.uid] || "",
                     leagueId: item.league.id, leagueName: leagueName, place: Number(row.place) || 0,
                     total: Number(row.total) || 0, playerPoints: Number(row.playerPoints) || 0,
                     goaliePoints: Number(row.goaliePoints) || 0, teamPoints: Number(row.teamPoints) || 0
@@ -90,7 +95,7 @@ function perTeam(entries)
 
         if (!team)
         {
-            team = { uid: entry.uid, name: entry.name, leagues: 0, wins: 0, second: 0, third: 0, podium: 0, total: 0, playerPoints: 0, goaliePoints: 0, teamPoints: 0 };
+            team = { uid: entry.uid, name: entry.name, suffix: entry.suffix, leagues: 0, wins: 0, second: 0, third: 0, podium: 0, total: 0, playerPoints: 0, goaliePoints: 0, teamPoints: 0 };
             map.set(entry.uid, team);
         }
 
@@ -110,31 +115,31 @@ function draw(entries)
     const teams = perTeam(entries);
 
     addGroup("", [
-        makeBoard("League Wins", teams.map(function(t) { return { uid: t.uid, name: t.name, value: t.wins }; }), null, whole, "Wins"),
+        makeBoard("League Wins", teams.map(function(t) { return { uid: t.uid, name: t.name, suffix: t.suffix, value: t.wins }; }), null, whole, "Wins"),
         makeBoard("League Podium Points", teams.map(function(t) {
-            return { uid: t.uid, name: t.name, extras: [String(t.wins), String(t.second), String(t.third)], value: t.podium };
+            return { uid: t.uid, name: t.name, suffix: t.suffix, extras: [String(t.wins), String(t.second), String(t.third)], value: t.podium };
         }), ["1st", "2nd", "3rd"], whole, "Pts"),
-        makeBoard("Leagues Played", teams.map(function(t) { return { uid: t.uid, name: t.name, value: t.leagues }; }), null, whole, "Leagues"),
+        makeBoard("Leagues Played", teams.map(function(t) { return { uid: t.uid, name: t.name, suffix: t.suffix, value: t.leagues }; }), null, whole, "Leagues"),
         makeBoard("League Win Rate", teams.map(function(t) {
-            return { uid: t.uid, name: t.name, extras: [String(t.wins), String(t.leagues)], value: t.wins / t.leagues * 100 };
+            return { uid: t.uid, name: t.name, suffix: t.suffix, extras: [String(t.wins), String(t.leagues)], value: t.wins / t.leagues * 100 };
         }), ["Wins", "Leagues"], function(value) { return formatPoints(value) + "%"; }, "Rate")
     ]);
 
     addGroup("Single Season", KINDS.map(function(kind) {
         return makeBoard(kind.label, entries.map(function(e) {
-            return { uid: e.uid, name: e.name, league: e.leagueName, leagueId: e.leagueId, value: e[kind.key] };
+            return { uid: e.uid, name: e.name, suffix: e.suffix, league: e.leagueName, leagueId: e.leagueId, value: e[kind.key] };
         }), "League", formatPoints);
     }));
 
     addGroup("All Time", KINDS.map(function(kind) {
         return makeBoard(kind.label, teams.map(function(t) {
-            return { uid: t.uid, name: t.name, extra: String(t.leagues), value: t[kind.key] };
+            return { uid: t.uid, name: t.name, suffix: t.suffix, extra: String(t.leagues), value: t[kind.key] };
         }), "Leagues", formatPoints);
     }));
 
     addGroup("Average Points", KINDS.map(function(kind) {
         return makeBoard(kind.label, teams.map(function(t) {
-            return { uid: t.uid, name: t.name, extra: String(t.leagues), value: t[kind.key] / t.leagues };
+            return { uid: t.uid, name: t.name, suffix: t.suffix, extra: String(t.leagues), value: t[kind.key] / t.leagues };
         }), "Leagues", formatPoints);
     }));
 }
@@ -251,6 +256,7 @@ function makeBoard(title, items, extraTitle, format, valueLabel)
             link.href = "user.html?id=" + encodeURIComponent(item.uid);
             link.textContent = item.name;
             teamCell.appendChild(link);
+            appendSuffix(teamCell, item.suffix);
 
             if (extraTitle === "League")
             {

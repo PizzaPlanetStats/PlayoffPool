@@ -18,6 +18,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteField,
   writeBatch,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
@@ -110,4 +111,10 @@ export async function changePassword(currentPassword, newPassword)
 
   await reauthenticateWithCredential(user, credential);
   await updatePassword(user, newPassword);
+}
+
+// the suffix shown after the team name (see suffixes.js). An empty key removes it.
+export async function updateSuffix(uid, key)
+{
+  await updateDoc(doc(db, "teams", uid), { suffix: key === "" ? deleteField() : key });
 }

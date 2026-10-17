@@ -20,12 +20,14 @@ export async function loadStandings(leagueId, league, options)
 
     // team names are public. If they can't be read the rows just say "(unknown team)".
     const names = {};
+    const suffixes = {};
 
     try
     {
         const teams = await getDocs(collection(db, "teams"));
         teams.forEach(function(teamDoc) {
             names[teamDoc.id] = String(teamDoc.data().teamName || "");
+            suffixes[teamDoc.id] = String(teamDoc.data().suffix || "");
         });
     }
     catch (err)
@@ -87,6 +89,7 @@ export async function loadStandings(leagueId, league, options)
         row.uid = entryDoc.id;
         row.entry = entryDoc.data();
         row.name = names[entryDoc.id] || "(unknown team)";
+        row.suffix = suffixes[entryDoc.id] || "";
         return row;
     });
 
