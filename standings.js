@@ -266,10 +266,18 @@ export function describePicks(league, entry, actual, lookup, nhl)
     });
 }
 
+// the admin's points adjustment for a team (leagues/{id}.adjustments = { teamId: points }), 0 when there is none
+function adjustmentFor(league, uid)
+{
+    const value = league && league.adjustments && uid ? Number(league.adjustments[uid]) : 0;
+
+    return Number.isFinite(value) ? value : 0;
+}
+
 // everything the standings table and a team's page need for one team.
 // lookup = makeStatsLookup(...) of the saved player stats, or null before the first stats update
 // nhl = the NHL player list (see nhlPlayers.js), used to find the team of "Other" picks that were saved without one; may be null
-export function buildRow(league, entry, lookup, nhl)
+export function buildRow(league, entry, lookup, nhl, uid)
 {
     const actual = actualRounds(league);
     const picks = describePicks(league, entry, actual, lookup, nhl);
@@ -282,7 +290,8 @@ export function buildRow(league, entry, lookup, nhl)
     const row = {
         playerPoints: sum(picks.filter(function(pick) { return !pick.goalie; })),
         goaliePoints: sum(picks.filter(function(pick) { return pick.goalie; })),
-        teamPoints: prediction.total,
+        adjustment: adjustmentFor(league, uid),
+        teamPoints: prediction.total + adjustmentFor(league, uid),
         marks: prediction.marks,
         playersRemaining: picks.filter(function(pick) { return pick.alive === true && !pick.goalie; }).length,
         goaliesRemaining: picks.filter(function(pick) { return pick.alive === true && pick.goalie; }).length,

@@ -1048,7 +1048,8 @@ table.stats tr.not-real td
 
 
 /* manage page: green "Stats saved." message */
-#stats-message:not(.error)
+#stats-message:not(.error),
+#adjust-message:not(.error)
 {
   color: #1a6e00;
   font-weight: bold;
@@ -1080,3 +1081,17 @@ table.board-table th.sortable:hover { color: #fff; }
   padding: 5px 10px;
   font-size: 26px;
 }
+
+/* team page: leagues and stats tables */
+table.user-table { width: 100%; }
+table.user-table th.num,
+table.user-table td.num { text-align: center; }
+table.stat-table { width: auto; min-width: 360px; margin-bottom: 16px; }
+table.stat-table td:first-child { font-weight: bold; }
+table.stat-table td.num { min-width: 110px; }
+
+/* team page: leagues table colours by finish */
+table.league-table tr:nth-child(even) td { background: #fff; }
+table.league-table tr.place-1 td { background: #f7e08c; }
+table.league-table tr.place-2 td { background: #dfe3e8; }
+table.league-table tr.place-3 td { background: #e9bd91; }

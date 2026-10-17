@@ -27,6 +27,7 @@ const playersTable = document.getElementById("players-table");
 const goaliesTable = document.getElementById("goalies-table");
 const totalPoints = document.getElementById("total-points");
 const bracketTotal = document.getElementById("bracket-total");
+const adjustTotal = document.getElementById("adjust-total");
 const bracketBox = document.getElementById("bracket");
 
 const params = new URLSearchParams(location.search);
@@ -156,7 +157,7 @@ async function show(user)
 
             if (entrySnap.exists())
             {
-                row = buildRow(league, entrySnap.data(), null, await loadKnownPlayers(league.year));
+                row = buildRow(league, entrySnap.data(), null, await loadKnownPlayers(league.year), teamId);
                 row.entry = entrySnap.data();
             }
         }
@@ -210,6 +211,13 @@ async function show(user)
 
     totalPoints.textContent = formatPoints(row.total);
     bracketTotal.textContent = "Team points: " + formatPoints(row.teamPoints);
+
+    // points the admin added or removed (for example the 2020 qualifier and round robin)
+    if (row.adjustment !== 0 || Number(league.year) === 2020)
+    {
+        adjustTotal.textContent = "Qualifier and Round Robin points: " + formatPoints(row.adjustment);
+        adjustTotal.classList.remove("hidden");
+    }
 
     const codes = normalizeCodes(league.playoffTeams);
     const winners = row.entry && row.entry.bracket ? cleanWinners(codes, row.entry.bracket.winners) : [];

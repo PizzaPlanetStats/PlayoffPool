@@ -43,6 +43,12 @@ const addTeamSelect = document.getElementById("add-team");
 const addTeamButton = document.getElementById("add-team-button");
 const entriesMessage = document.getElementById("entries-message");
 
+const adjustStatus = document.getElementById("adjust-status");
+const adjustScroll = document.getElementById("adjust-scroll");
+const adjustBody = document.getElementById("adjust-body");
+const adjustMessage = document.getElementById("adjust-message");
+const saveAdjustButton = document.getElementById("save-adjust");
+
 const statsSaved = document.getElementById("stats-saved");
 const saveStatsButton = document.getElementById("save-stats");
 const statsMessage = document.getElementById("stats-message");
@@ -74,6 +80,7 @@ let winners = [];
 let groups = [];
 let nhlPlayers = null;       // the NHL player list once it has loaded
 let nhlState = "loading";    // "loading", "ready" or "failed"
+let adjustments = {};        // teamId -> points added to (or taken from) that team's team points
 let loaded = false;
 
 onAuthStateChanged(auth, async function(user) {
@@ -135,6 +142,7 @@ async function loadLeague()
     manageArea.classList.remove("hidden");
 
     // ----- teams in the league -----
+    adjustments = data.adjustments && typeof data.adjustments === "object" ? data.adjustments : {};
     loadEntries();
 
     // ----- saved stats -----
@@ -206,6 +214,8 @@ async function loadEntries()
     entriesStatus.textContent = registered.length === 0 ? "No teams registered." : "";
     entriesScroll.classList.toggle("hidden", registered.length === 0);
 
+    drawAdjustments(registered);
+
     registered.forEach(function(team) {
         const row = document.createElement("tr");
 
@@ -275,6 +285,77 @@ async function loadEntries()
         addTeamSelect.appendChild(option);
     });
 }
+
+/* =========================================================== points adjustment */
+
+// one number per registered team, added to its team points (use a minus sign to take points away)
+function drawAdjustments(registered)
+{
+    adjustBody.textContent = "";
+    adjustStatus.textContent = registered.length === 0 ? "No teams registered." : "";
+    adjustScroll.classList.toggle("hidden", registered.length === 0);
+    saveAdjustButton.classList.toggle("hidden", registered.length === 0);
+
+    registered.forEach(function(team) {
+        const row = document.createElement("tr");
+        const nameCell = document.createElement("td");
+        nameCell.textContent = team.name;
+
+        const inputCell = document.createElement("td");
+        const input = document.createElement("input");
+        input.type = "number";
+        input.step = "any";
+        input.className = "points-input";
+        input.dataset.team = team.id;
+        input.value = adjustments[team.id] ? String(adjustments[team.id]) : "0";
+        input.setAttribute("aria-label", "Points for " + team.name);
+        inputCell.appendChild(input);
+
+        row.append(nameCell, inputCell);
+        adjustBody.appendChild(row);
+    });
+}
+
+saveAdjustButton.addEventListener("click", async function() {
+    adjustMessage.classList.add("error");
+    adjustMessage.textContent = "";
+
+    const next = {};
+
+    for (const input of adjustBody.querySelectorAll("input"))
+    {
+        const value = Number(input.value);
+
+        if (input.value.trim() === "" || !Number.isFinite(value) || Math.abs(value) > 100000)
+        {
+            adjustMessage.textContent = "Every team needs a number.";
+            return;
+        }
+
+        if (value !== 0)
+        {
+            next[input.dataset.team] = value;
+        }
+    }
+
+    saveAdjustButton.disabled = true;
+
+    try
+    {
+        await updateDoc(doc(db, "leagues", leagueId), { adjustments: next });
+        adjustments = next;
+        adjustMessage.classList.remove("error");
+        adjustMessage.textContent = "Saved.";
+    }
+    catch (err)
+    {
+        adjustMessage.textContent = err.code === "permission-denied"
+            ? "Firebase refused to save. Check that the new rules are published."
+            : "Could not save. Try again.";
+    }
+
+    saveAdjustButton.disabled = false;
+});
 
 function adminRegisterUrl(teamId)
 {

@@ -4,6 +4,8 @@
 
 import { auth, onAuthStateChanged, signOut, getProfile, getPublicTeam, updateTeamName, validTeamName, changePassword } from "./team.js";
 import { ACHIEVEMENTS } from "./achievements.js";
+import { loadSeasons, computeStats } from "./userStats.js";
+import { formatPoints } from "./standings.js";
 
 const status = document.getElementById("status");
 const profileArea = document.getElementById("profile");
@@ -18,6 +20,12 @@ const pwMessage = document.getElementById("pw-message");
 const pwButton = document.getElementById("change-pw");
 const logoutButton = document.getElementById("logout");
 const achievementsArea = document.getElementById("achievements");
+const leaguesStatus = document.getElementById("leagues-status");
+const leaguesScroll = document.getElementById("leagues-scroll");
+const leaguesBody = document.getElementById("leagues-body");
+const statsBox = document.getElementById("stats-box");
+const summaryStats = document.getElementById("summary-stats");
+const pointsStats = document.getElementById("points-stats");
 
 const requestedId = new URLSearchParams(location.search).get("id");
 
@@ -98,6 +106,132 @@ function showAchievements(unlocked)
     }
 }
 
+// the table of leagues, and the Stats box (both come from the saved final standings of ended leagues)
+async function showHistory(teamId)
+{
+    let seasons;
+
+    try
+    {
+        seasons = await loadSeasons(teamId);
+    }
+    catch (err)
+    {
+        leaguesStatus.textContent = "Could not load the leagues. Try again later.";
+        return;
+    }
+
+    if (seasons.length === 0)
+    {
+        leaguesStatus.textContent = "No leagues played yet.";
+        return;
+    }
+
+    leaguesScroll.classList.remove("hidden");
+
+    seasons.forEach(function(season) {
+        const row = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        const link = document.createElement("a");
+        link.href = "leagueTeam.html?id=" + encodeURIComponent(season.leagueId) + "&team=" + encodeURIComponent(teamId);
+        link.textContent = season.leagueName;
+        nameCell.appendChild(link);
+        row.appendChild(nameCell);
+
+        if (season.place >= 1 && season.place <= 3)
+        {
+            row.className = "place-" + season.place;
+        }
+
+        [season.place, season.total].forEach(function(value, index) {
+            const cell = document.createElement("td");
+            cell.className = "num";
+            cell.textContent = index === 0 ? String(value) : formatPoints(value);
+            row.appendChild(cell);
+        });
+
+        leaguesBody.appendChild(row);
+    });
+
+    const stats = computeStats(seasons);
+
+    summaryStats.appendChild(buildTable(null, [
+        ["Leagues Played", String(stats.leagues)],
+        ["League Wins", String(stats.first)],
+        ["Win Rate", formatPoints(stats.winRate) + "%"],
+        ["Podiums (1st / 2nd / 3rd)", stats.first + " / " + stats.second + " / " + stats.third],
+        ["Podium Points", String(stats.podiumPoints)],
+        ["Average Finish", formatPoints(stats.averageFinish)],
+        ["Best Finish", String(stats.bestFinish)]
+    ], "General Stats"));
+
+    const labels = { total: "Points", playerPoints: "Player Points", goaliePoints: "Goalie Points", teamPoints: "Team Points" };
+
+    pointsStats.appendChild(buildTable(["Category", "All Time", "Average", "Best Result"], stats.kinds.map(function(kind) {
+        return [labels[kind.key], formatPoints(kind.sum), formatPoints(kind.average), formatPoints(kind.best)];
+    })));
+
+    statsBox.classList.remove("hidden");
+}
+
+// a small table. head = list of column titles or null, rows = lists of text (the first column is the row title),
+// title = a heading that stretches across all the columns (optional)
+function buildTable(head, rows, title)
+{
+    const table = document.createElement("table");
+    table.className = "stats user-table stat-table";
+
+    if (title)
+    {
+        const titleCell = document.createElement("th");
+        titleCell.colSpan = rows[0].length;
+        titleCell.textContent = title;
+
+        const titleRow = document.createElement("tr");
+        titleRow.appendChild(titleCell);
+
+        const titleHead = document.createElement("thead");
+        titleHead.appendChild(titleRow);
+        table.appendChild(titleHead);
+    }
+
+    if (head)
+    {
+        const headRow = document.createElement("tr");
+
+        head.forEach(function(title, index) {
+            const cell = document.createElement("th");
+            cell.textContent = title;
+            cell.className = index > 0 ? "num" : "";
+            headRow.appendChild(cell);
+        });
+
+        const thead = document.createElement("thead");
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+    }
+
+    const body = document.createElement("tbody");
+
+    rows.forEach(function(values) {
+        const row = document.createElement("tr");
+
+        values.forEach(function(text, index) {
+            const cell = document.createElement("td");
+            cell.textContent = text;
+            cell.className = index > 0 ? "num" : "";
+            row.appendChild(cell);
+        });
+
+        body.appendChild(row);
+    });
+
+    table.appendChild(body);
+
+    return table;
+}
+
 onAuthStateChanged(auth, async function(user) {
     // "My Team" with no id in the address needs a signed-in team
     if (!requestedId && !user)
@@ -142,6 +276,7 @@ onAuthStateChanged(auth, async function(user) {
 
     status.classList.add("hidden");
     profileArea.classList.remove("hidden");
+    showHistory(teamId);
 
     // only the owner sees the account tools
     ownArea.classList.toggle("hidden", !isOwner);

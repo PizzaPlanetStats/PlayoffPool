@@ -58,7 +58,7 @@ export async function loadStandings(leagueId, league, options)
         }
     }
 
-    // otherwise every player's playoff stats for this league's season, from the Worker (it asks the NHL and refreshes every 15 minutes).
+    // otherwise every player's playoff stats for this league's season, from the Worker (it asks the NHL and refreshes every 5 minutes).
     // If it can't be loaded the stats just show as dashes.
     if (!saved)
     {
@@ -82,7 +82,7 @@ export async function loadStandings(leagueId, league, options)
     const nhl = saved ? [] : await loadKnownPlayers(league.year);
 
     const rows = entries.docs.map(function(entryDoc) {
-        const row = buildRow(league, entryDoc.data(), lookup, nhl);
+        const row = buildRow(league, entryDoc.data(), lookup, nhl, entryDoc.id);
 
         row.uid = entryDoc.id;
         row.entry = entryDoc.data();

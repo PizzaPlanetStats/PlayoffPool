@@ -28,16 +28,26 @@
         <div class="box team-card">
             <img id="team-logo" class="team-logo hidden" alt="">
             <h2 id="team-name" class="team-name"></h2>
+            <p class="team-sub">Member of the Pizza Planet Playoff Pool</p>
         </div>
 
-        <div class="box">
-            <h3>My Seasons</h3>
-            <p>WIP</p>
+        <div id="leagues-box" class="box">
+            <h3>Leagues</h3>
+            <p id="leagues-status" class="hint"></p>
+            <div id="leagues-scroll" class="scroll hidden">
+                <table class="stats user-table league-table">
+                    <thead>
+                        <tr><th>League</th><th class="num">Place</th><th class="num">Points</th></tr>
+                    </thead>
+                    <tbody id="leagues-body"></tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="box">
+        <div id="stats-box" class="box hidden">
             <h3>All Time Stats</h3>
-            <p>WIP</p>
+            <div id="points-stats" class="scroll"></div>
+            <div id="summary-stats" class="scroll"></div>
         </div>
 
         <div class="box">
@@ -63,7 +73,7 @@
                 <label for="current-password">Current password</label>
                 <input type="password" id="current-password" autocomplete="current-password">
 
-                <label for="new-password">New password</label>
+                <label for="new-password">New password (at least 8 characters)</label>
                 <input type="password" id="new-password" autocomplete="new-password">
 
                 <label for="confirm-password">Confirm new password</label>

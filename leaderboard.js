@@ -90,12 +90,15 @@ function perTeam(entries)
 
         if (!team)
         {
-            team = { uid: entry.uid, name: entry.name, leagues: 0, wins: 0, total: 0, playerPoints: 0, goaliePoints: 0, teamPoints: 0 };
+            team = { uid: entry.uid, name: entry.name, leagues: 0, wins: 0, second: 0, third: 0, podium: 0, total: 0, playerPoints: 0, goaliePoints: 0, teamPoints: 0 };
             map.set(entry.uid, team);
         }
 
         team.leagues++;
         team.wins += entry.place === 1 ? 1 : 0;
+        team.second += entry.place === 2 ? 1 : 0;
+        team.third += entry.place === 3 ? 1 : 0;
+        team.podium += entry.place === 1 ? 3 : entry.place === 2 ? 2 : entry.place === 3 ? 1 : 0;
         KINDS.forEach(function(kind) { team[kind.key] += entry[kind.key]; });
     });
 
@@ -106,8 +109,15 @@ function draw(entries)
 {
     const teams = perTeam(entries);
 
-    addGroup("League Wins", [
-        makeBoard("League Wins", teams.map(function(t) { return { uid: t.uid, name: t.name, value: t.wins }; }), null, whole)
+    addGroup("", [
+        makeBoard("League Wins", teams.map(function(t) { return { uid: t.uid, name: t.name, value: t.wins }; }), null, whole, "Wins"),
+        makeBoard("League Podium Points", teams.map(function(t) {
+            return { uid: t.uid, name: t.name, extras: [String(t.wins), String(t.second), String(t.third)], value: t.podium };
+        }), ["1st", "2nd", "3rd"], whole, "Pts"),
+        makeBoard("Leagues Played", teams.map(function(t) { return { uid: t.uid, name: t.name, value: t.leagues }; }), null, whole, "Leagues"),
+        makeBoard("League Win Rate", teams.map(function(t) {
+            return { uid: t.uid, name: t.name, extras: [String(t.wins), String(t.leagues)], value: t.wins / t.leagues * 100 };
+        }), ["Wins", "Leagues"], function(value) { return formatPoints(value) + "%"; }, "Rate")
     ]);
 
     addGroup("Single Season", KINDS.map(function(kind) {
@@ -139,9 +149,12 @@ function addGroup(title, boards)
     const box = document.createElement("div");
     box.className = "box";
 
-    const heading = document.createElement("h3");
-    heading.textContent = title + " Leaderboard";
-    box.appendChild(heading);
+    if (title)
+    {
+        const heading = document.createElement("h3");
+        heading.textContent = title + " Leaderboard";
+        box.appendChild(heading);
+    }
 
     const grid = document.createElement("div");
     grid.className = "board-grid";
@@ -152,7 +165,7 @@ function addGroup(title, boards)
 }
 
 // A table of the top 20. Clicking the value heading switches between best first and worst first.
-function makeBoard(title, items, extraTitle, format)
+function makeBoard(title, items, extraTitle, format, valueLabel)
 {
     const wrap = document.createElement("div");
     wrap.className = "board";
@@ -180,10 +193,15 @@ function makeBoard(title, items, extraTitle, format)
     th("#", "num");
     th("Team", "");
 
-    if (extraTitle)
+    // extra columns: "League" is a link to the league, anything else is a number column (a list of titles gives several)
+    const extraCols = Array.isArray(extraTitle) ? extraTitle : (extraTitle && extraTitle !== "League" ? [extraTitle] : []);
+
+    if (extraTitle === "League")
     {
-        th(extraTitle, extraTitle === "League" ? "" : "num");
+        th("League", "");
     }
+
+    extraCols.forEach(function(title) { th(title, "num"); });
 
     const valueHead = th("", "num sortable");
     valueHead.tabIndex = 0;
@@ -211,7 +229,7 @@ function makeBoard(title, items, extraTitle, format)
     {
         const sorted = (best ? ranked : ranked.slice().reverse()).slice(0, TOP);
 
-        valueHead.textContent = (best ? "▼" : "▲") + " " + (title.indexOf("Wins") >= 0 ? "Wins" : "Pts");
+        valueHead.textContent = (best ? "▼" : "▲") + " " + (valueLabel || "Pts");
         body.textContent = "";
 
         sorted.forEach(function(item) {
@@ -241,9 +259,9 @@ function makeBoard(title, items, extraTitle, format)
                 leagueLink.textContent = item.league;
                 leagueCell.appendChild(leagueLink);
             }
-            else if (extraTitle)
+            else
             {
-                td("num").textContent = item.extra;
+                (item.extras || (extraCols.length ? [item.extra] : [])).forEach(function(text) { td("num").textContent = text; });
             }
 
             td("num").textContent = format(item.value);
