@@ -18,22 +18,22 @@ form.addEventListener("submit", async function(event) {
 
     if (!validTeamName(teamName))
     {
-        message.textContent = "You are a fool, team name must be 2 to 30 characters.";
+        message.textContent = "Team name must be 2 to 30 characters.";
         return;
     }
     if (!email || !code)
     {
-        message.textContent = "You are a fool, fill in every box.";
+        message.textContent = "Fill in every box.";
         return;
     }
-    if (password.length < 4)
+    if (password.length < 8)
     {
-        message.textContent = "You are a fool, password must be at least 4 characters.";
+        message.textContent = "Password must be at least 8 characters.";
         return;
     }
     if (password !== confirm)
     {
-        message.textContent = "You are a fool, the passwords do not match.";
+        message.textContent = "The passwords do not match.";
         return;
     }
 
@@ -49,23 +49,27 @@ form.addEventListener("submit", async function(event) {
     {
         if (err.code === "app/bad-league-code")
         {
-            message.textContent = "You are a fool, the league code is wrong.";
+            message.textContent = "That registration code is not right.";
         }
         else if (err.code === "auth/email-already-in-use")
         {
-            message.textContent = "You are a fool, that email already has an account.";
+            message.textContent = "That email already has an account. Try signing in.";
         }
         else if (err.code === "auth/invalid-email")
         {
-            message.textContent = "You are a fool, that ain't no email.";
+            message.textContent = "That email address does not look right.";
+        }
+        else if (err.code === "auth/weak-password")
+        {
+            message.textContent = "Pick a stronger password.";
         }
         else if (err.code === "auth/network-request-failed")
         {
-            message.textContent = "Network problem. Check your connection and regain.";
+            message.textContent = "Network problem. Check your connection and try again.";
         }
         else
         {
-            message.textContent = "Could not create the account. Regain.";
+            message.textContent = "Could not create the account. Try again.";
         }
     }
 

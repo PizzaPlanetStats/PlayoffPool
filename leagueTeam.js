@@ -205,7 +205,7 @@ async function show(user)
     logo.src = encodeURIComponent(teamId) + ".png";
     logoBox.appendChild(logo);
 
-    addLink("Back to the league", "league.html?id=" + encodeURIComponent(leagueId));
+    addLink("League Home", "league.html?id=" + encodeURIComponent(leagueId));
 
     if (isMine && phase === "open")
     {

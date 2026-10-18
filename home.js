@@ -5,7 +5,7 @@
 import { db } from "./firebase.js";
 import { auth, onAuthStateChanged } from "./team.js";
 import { appendSuffix } from "./suffixes.js";
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { leaguePhase, phaseInfo } from "./phases.js";
 
 const signupPrompt = document.getElementById("signup-prompt");
@@ -82,16 +82,57 @@ async function loadLeagues()
         return league.phase === "ended";
     });
 
-    renderLeagueTable(current, leaguesStatus, leaguesTable, leaguesBody, "No leagues open.", true);
+    renderLeagueTable(current, leaguesStatus, leaguesTable, leaguesBody, "No leagues open.", true, false);
 
     if (pastTable)
     {
-        renderLeagueTable(past, pastStatus, pastTable, pastBody, "No past leagues found.", false);
+        await attachWinners(past);
+        renderLeagueTable(past, pastStatus, pastTable, pastBody, "No past leagues found.", false, true);
     }
 }
 
+// the team (or teams, if they tied) in first place of each ended league, from its saved final standings.
+// A league that was ended without Save Stats has no winner to show.
+async function attachWinners(past)
+{
+    const names = {};
+    const suffixes = {};
+
+    try
+    {
+        const teamDocs = await getDocs(collection(db, "teams"));
+
+        teamDocs.forEach(function(teamDoc) {
+            names[teamDoc.id] = String(teamDoc.data().teamName || "");
+            suffixes[teamDoc.id] = String(teamDoc.data().suffix || "");
+        });
+    }
+    catch (err)
+    {
+        // the names saved with the standings are used instead
+    }
+
+    await Promise.all(past.map(async function(league) {
+        league.winners = [];
+
+        try
+        {
+            const snap = await getDoc(doc(db, "leagues", league.id, "final", "standings"));
+            const rows = snap.exists() ? (snap.data().standings || []) : [];
+
+            league.winners = rows.filter(function(row) { return Number(row.place) === 1; }).map(function(row) {
+                return { uid: String(row.uid), name: names[row.uid] || String(row.name || "(unknown team)"), suffix: suffixes[row.uid] || "" };
+            });
+        }
+        catch (err)
+        {
+            // no winner shown
+        }
+    }));
+}
+
 // fill one of the league tables (the current one also shows each league's status)
-function renderLeagueTable(leagues, status, table, body, emptyText, showStatus)
+function renderLeagueTable(leagues, status, table, body, emptyText, showStatus, showWinner)
 {
     body.textContent = "";
 
@@ -126,6 +167,41 @@ function renderLeagueTable(leagues, status, table, body, emptyText, showStatus)
             const statusCell = document.createElement("td");
             statusCell.textContent = phaseInfo(league.phase).label;
             row.appendChild(statusCell);
+        }
+
+        if (showWinner)
+        {
+            const winnerCell = document.createElement("td");
+
+            (league.winners || []).forEach(function(winner) {
+                // same logo and name layout as the teams list
+                const winnerRow = document.createElement("div");
+                winnerRow.className = "team-row";
+
+                const winnerLogoBox = document.createElement("span");
+                winnerLogoBox.className = "thumb-box";
+
+                const winnerLogo = document.createElement("img");
+                winnerLogo.alt = "";
+                winnerLogo.loading = "lazy";
+                winnerLogo.addEventListener("error", function() {
+                    winnerLogo.remove();
+                });
+                winnerLogo.src = encodeURIComponent(winner.uid) + ".png";
+                winnerLogoBox.appendChild(winnerLogo);
+
+                const winnerText = document.createElement("span");
+                const winnerLink = document.createElement("a");
+                winnerLink.href = "user.html?id=" + encodeURIComponent(winner.uid);
+                winnerLink.textContent = winner.name;
+                winnerText.appendChild(winnerLink);
+                appendSuffix(winnerText, winner.suffix);
+
+                winnerRow.append(winnerLogoBox, winnerText);
+                winnerCell.appendChild(winnerRow);
+            });
+
+            row.insertBefore(winnerCell, yearCell);
         }
 
         body.appendChild(row);

@@ -361,7 +361,7 @@ table.stats th {
   background: var(--navy);
   color: var(--lime);
 }
-table.stats tr:nth-child(even) td { background: #eef; }
+table.stats tr:nth-child(even) td { background: #f6f6fc; }
 table.pick-table tr:nth-child(even) td { background: #fff; }
 
 .id-cell {
@@ -1145,3 +1145,54 @@ form.simple select
   font-size: 0.55em;
   letter-spacing: 0;
 }
+
+/* league team page bracket: only the points marks are coloured, so a team that won and was predicted right is easy to tell apart */
+#team-area .bracket-team.won { background: #ffffff; }
+
+#team-area .bracket-team.lost { color: #555555; }
+
+#team-area .bracket-team.mark-exact
+{
+  background: #a8dca0;
+  box-shadow: inset 5px 0 0 #2e8b3a;
+}
+
+#team-area .bracket-team.mark-half
+{
+  background: #ffe08a;
+  box-shadow: inset 5px 0 0 #d69a00;
+}
+
+#team-area .bracket-team.mark-miss
+{
+  background: #f0a3a3;
+  box-shadow: inset 5px 0 0 #c0392b;
+}
+
+#team-area .bracket-mark { display: inline-block; width: 100%; margin: 2px 0 0 6px; }
+
+/* team and league links inside tables: navy and bold instead of the default blue/purple underline */
+table.stats a:not(.btn),
+table.stats a:not(.btn):visited
+{
+  color: var(--navy);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+table.stats a:not(.btn):hover,
+table.stats a:not(.btn):focus
+{
+  color: var(--orange-dark);
+  text-decoration: underline;
+}
+
+/* registration picks: the radio button and the player's name line up in the middle */
+.pick
+{
+  display: flex;
+  align-items: center;
+}
+
+.pick input[type="radio"] { margin-top: 0; margin-bottom: 0; }
+.pick input[type="text"] { margin-left: 6px; }
