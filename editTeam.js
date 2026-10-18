@@ -11,12 +11,12 @@ import {
     updateDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { ACHIEVEMENTS } from "./achievements.js";
+import { MANUAL_ACHIEVEMENTS } from "./autoAchievements.js";
 
 const checking = document.getElementById("checking");
 const status = document.getElementById("status");
 const formArea = document.getElementById("form-area");
 const teamHeading = document.getElementById("team-name");
-const viewLink = document.getElementById("view-link");
 const tableBody = document.getElementById("achievements-body");
 const form = document.getElementById("team-form");
 const message = document.getElementById("message");
@@ -68,7 +68,12 @@ function buildRows()
         description.textContent = achievement.description;
         nameCell.append(label, description);
 
-        row.append(checkCell, nameCell);
+        // achievements that are worked out from the results unlock themselves, the others are ticked here by hand
+        const unlockCell = document.createElement("td");
+        unlockCell.className = "num";
+        unlockCell.textContent = MANUAL_ACHIEVEMENTS.includes(achievement.id) ? "Manual" : "Auto";
+
+        row.append(checkCell, nameCell, unlockCell);
         tableBody.appendChild(row);
         rows.push({ achievement: achievement, checkbox: checkbox });
     });
@@ -113,7 +118,6 @@ async function loadTeam()
     const unlocked = Array.isArray(data.achievements) ? data.achievements : [];
 
     teamHeading.textContent = String(data.teamName || "(no name)");
-    viewLink.href = "user.html?id=" + encodeURIComponent(teamId);
 
     rows.forEach(function(row) {
         row.checkbox.checked = unlocked.includes(row.achievement.id);

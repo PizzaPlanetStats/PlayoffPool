@@ -1059,10 +1059,11 @@ table.stats tr.not-real td
 .board-grid
 {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
   gap: 8px 28px;
 }
 
+.board { min-width: 0; }
 .board .sub-title { margin: 14px 0 8px; }
 
 table.board-table { width: 100%; }
@@ -1196,3 +1197,96 @@ table.stats a:not(.btn):focus
 
 .pick input[type="radio"] { margin-top: 0; margin-bottom: 0; }
 .pick input[type="text"] { margin-left: 6px; }
+
+/* points history chart on the team page */
+.chart-legend
+{
+  margin: 4px 0 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  color: #52514e;
+}
+
+.chart-legend > span { display: inline-block; margin-right: 16px; }
+
+.chart-swatch
+{
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.chart-scroll { position: relative; }
+
+.chart-players { fill: #2a78d6; background: #2a78d6; }
+.chart-goalies { fill: #eb6834; background: #eb6834; }
+.chart-team { fill: #1baf7a; background: #1baf7a; }
+
+.chart-grid { stroke: #dcdcd8; stroke-width: 1; }
+
+.chart-axis
+{
+  fill: #52514e;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+}
+
+.chart-value
+{
+  fill: #0b0b0b;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.chart-column { cursor: default; outline: none; }
+.chart-column:hover path,
+.chart-column:focus path { opacity: 0.85; }
+
+.chart-tooltip
+{
+  position: absolute;
+  z-index: 5;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid #52514e;
+  color: #0b0b0b;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* phones: the standings keep the team name in view while the numbers scroll sideways */
+@media (max-width: 600px)
+{
+  #standings table.standings { min-width: 500px; }
+  #standings table.standings th:first-child { width: 140px; }
+  #standings table.standings th.num { width: 52px; }
+
+  #standings table.standings th:first-child,
+  #standings table.standings td:first-child
+  {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+  }
+
+  #standings table.standings td:first-child { background: #ffffff; }
+  #standings table.standings tr:nth-child(even) td:first-child { background: #f6f6fc; }
+
+  #standings .thumb-box { display: none; }
+  #standings .suffix { white-space: normal; }
+}
+
+@media (max-width: 600px)
+{
+  #past-table { min-width: 520px; }
+  #leagues-table { min-width: 440px; }
+}
+
+/* edit team: the Auto / Manual column */
+#team-form table.stats th:last-child,
+#team-form table.stats td.num { text-align: center; width: 90px; }

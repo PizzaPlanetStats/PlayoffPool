@@ -215,9 +215,17 @@ function makeBoard(title, items, extraTitle, format, valueLabel)
     head.appendChild(headRow);
     table.appendChild(head);
 
+    // # + team + the extra columns + the value
+    table.style.minWidth = (64 + 170 + (extraCols.length + (extraTitle === "League" ? 1 : 0)) * 64 + 90) + "px";
+
     const body = document.createElement("tbody");
     table.appendChild(body);
-    wrap.appendChild(table);
+
+    // wide tables scroll sideways instead of squeezing their columns
+    const scroller = document.createElement("div");
+    scroller.className = "scroll";
+    scroller.appendChild(table);
+    wrap.appendChild(scroller);
 
     let best = true;
     let showAll = false;

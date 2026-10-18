@@ -25,6 +25,7 @@ import { renderBracket } from "./bracket.js";
 import { normalizeCodes, cleanWinners } from "./bracketLogic.js";
 import { leaguePhase } from "./phases.js";
 import { loadStandings } from "./leagueStandings.js";
+import { refreshAchievements } from "./autoAchievements.js";
 import { buildPhaseChoices, collectPhase, fillPhase } from "./leagueForm.js";
 import { loadPlayers, searchPlayers, normalizeName } from "./nhlPlayers.js";
 
@@ -51,6 +52,7 @@ const saveAdjustButton = document.getElementById("save-adjust");
 
 const statsSaved = document.getElementById("stats-saved");
 const saveStatsButton = document.getElementById("save-stats");
+const updateAchievementsButton = document.getElementById("update-achievements");
 const statsMessage = document.getElementById("stats-message");
 
 const phaseBox = document.getElementById("league-phase");
@@ -435,6 +437,9 @@ saveStatsButton.addEventListener("click", async function() {
             statsMessage.classList.remove("error");
             statsMessage.textContent = "Stats saved.";
             showSavedDate();
+
+            // the results are in, so unlock what teams have earned
+            statsMessage.textContent = "Stats saved. " + await updateAchievements();
         }
     }
     catch (err)
@@ -445,6 +450,30 @@ saveStatsButton.addEventListener("click", async function() {
     }
 
     saveStatsButton.disabled = false;
+});
+
+// unlocks the achievements the results have earned (see autoAchievements.js). returns a sentence to show.
+async function updateAchievements()
+{
+    try
+    {
+        const result = await refreshAchievements();
+        return result.added === 0 ? "Achievements are up to date." : result.added + " achievements unlocked.";
+    }
+    catch (err)
+    {
+        return err.code === "permission-denied"
+            ? "Achievements could not be updated. Check that the new rules are published."
+            : "Achievements could not be updated.";
+    }
+}
+
+updateAchievementsButton.addEventListener("click", async function() {
+    statsMessage.classList.remove("error");
+    statsMessage.textContent = "";
+    updateAchievementsButton.disabled = true;
+    statsMessage.textContent = await updateAchievements();
+    updateAchievementsButton.disabled = false;
 });
 
 /* =========================================================== league phase */
@@ -461,6 +490,12 @@ savePhaseButton.addEventListener("click", async function() {
 
         phaseMessage.classList.remove("error");
         phaseMessage.textContent = "Phase saved.";
+
+        // a league that has just ended counts towards achievements
+        if (collectPhase(phaseRadios) === "ended")
+        {
+            phaseMessage.textContent = "Phase saved. " + await updateAchievements();
+        }
     }
     catch (err)
     {
@@ -615,7 +650,7 @@ function buildGroupCard(group, index)
 
         const label = document.createElement("span");
         label.className = "player-name";
-        label.textContent = player.name + (player.id ? "" : " (not matched to the NHL)");
+        label.textContent = player.name + (shareName(player) && player.position ? " - " + player.position : "") + (player.id ? "" : " (not matched to the NHL)");
 
         const teamInput = document.createElement("input");
         teamInput.type = "text";
@@ -694,7 +729,7 @@ function buildPlayerAdder(group, groupIndex)
             matches.forEach(function(player) {
                 const button = document.createElement("button");
                 button.type = "button";
-                button.textContent = player.name + (player.team ? " (" + player.team + ")" : "");
+                button.textContent = player.name + (player.team ? " (" + player.team + ")" : "") + (player.position ? " - " + player.position : "");
                 button.addEventListener("click", function() {
                     addPlayer(group, player);
                 });
@@ -740,6 +775,21 @@ function buildPlayerAdder(group, groupIndex)
     return adder;
 }
 
+// true when another player in the league has this player's name (the position then tells them apart)
+function shareName(player)
+{
+    const norm = normalizeName(player.name);
+    let count = 0;
+
+    groups.forEach(function(group) {
+        group.players.forEach(function(other) {
+            count += normalizeName(other.name) === norm ? 1 : 0;
+        });
+    });
+
+    return count > 1;
+}
+
 // the same player can't be in two groups, so teams can't pick them twice
 function addPlayer(group, player)
 {
@@ -755,8 +805,9 @@ function addPlayer(group, player)
 
     for (let i = 0; i < groups.length; i++)
     {
+        // two players with the same name are different players when their ids differ (two Elias Petterssons)
         const found = groups[i].players.some(function(other) {
-            return (player.id !== "" && other.id === player.id) || normalizeName(other.name) === norm;
+            return player.id !== "" && other.id !== "" ? other.id === player.id : normalizeName(other.name) === norm;
         });
 
         if (found)

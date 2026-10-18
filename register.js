@@ -218,7 +218,8 @@ function cleanGroup(group, index)
             return {
                 id: String(player.id || ""),
                 name: String(player.name || ""),
-                team: String(player.team || "")
+                team: String(player.team || ""),
+                position: String(player.position || "")
             };
         })
     };
@@ -271,6 +272,21 @@ backButton.addEventListener("click", function() {
 
 /* =========================================================== step 2: players */
 
+// true when another player in the league has this player's name (the position then tells them apart)
+function sharesName(player)
+{
+    const norm = normalizeName(player.name);
+    let count = 0;
+
+    groups.forEach(function(group) {
+        group.players.forEach(function(other) {
+            count += normalizeName(other.name) === norm ? 1 : 0;
+        });
+    });
+
+    return count > 1;
+}
+
 // one box per group with a radio button for each player, and an Other box if the group has one
 function buildGroups(entry)
 {
@@ -298,7 +314,7 @@ function buildGroups(entry)
             radio.name = radioName;
             radio.value = "p" + playerIndex;
 
-            label.append(radio, player.name + (player.team ? " (" + player.team + ")" : ""));
+            label.append(radio, player.name + (player.team ? " (" + player.team + ")" : "") + (sharesName(player) && player.position ? " - " + player.position : ""));
             card.appendChild(label);
             radios.push(radio);
         });
@@ -422,6 +438,12 @@ function collectPicks()
                 const otherGroup = groups.find(function(g) { return g.id === elsewhere; });
                 return fail(name + " is already a choice in the group " + (groups.indexOf(otherGroup) + 1) + ", so you can't enter them in " + group.name
                     + ". Pick them in that group, or pick someone else.", selection.card);
+            }
+
+            // two players in this group share the name, so typing it can't say which one is meant
+            if (group.players.filter(function(p) { return normalizeName(p.name) === norm; }).length > 1)
+            {
+                return fail("More than one player in this group is named " + name + ". Pick the right one from the list.", selection.card);
             }
 
             // they are a choice in this very group, so just use that choice

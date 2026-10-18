@@ -13,9 +13,24 @@ import { leaguePhase } from "./phases.js";
 //
 // returns { rows, updated, hasStats, saved, players }. rows is ranked: [{ uid, name, place, total, playerPoints, goaliePoints, teamPoints, playersRemaining, goaliesRemaining, picks, entry }]
 // "updated" is when the stats were last updated (or null). Throws if the entries can't be read.
+//
+// { summary: true } is for the league's standings table, which only needs the totals. Once a league has ended and its final standings have been
+// saved, the table is built from that saved copy alone (the picks, the stats and the NHL are not touched, and nothing is worked out again).
+// The rows then only have uid, name, suffix, place and the points columns, so team pages don't use this.
 export async function loadStandings(leagueId, league, options)
 {
     const live = Boolean(options && options.live);
+
+    if (options && options.summary && !live && leaguePhase(league) === "ended")
+    {
+        const frozen = await loadFrozenStandings(leagueId);
+
+        if (frozen)
+        {
+            return frozen;
+        }
+    }
+
     const entries = await getDocs(collection(db, "leagues", leagueId, "entries"));
 
     // team names are public. If they can't be read the rows just say "(unknown team)".
@@ -93,6 +108,36 @@ export async function loadStandings(leagueId, league, options)
         return row;
     });
 
+    // an ended league keeps the numbers that were saved with its final standings, so a team's page always agrees with the table
+    if (!live && leaguePhase(league) === "ended")
+    {
+        try
+        {
+            const snap = await getDoc(doc(db, "leagues", leagueId, "final", "standings"));
+            const savedRows = snap.exists() && Array.isArray(snap.data().standings) ? snap.data().standings : [];
+
+            rows.forEach(function(row) {
+                const frozen = savedRows.find(function(candidate) { return String(candidate.uid) === row.uid; });
+
+                if (frozen)
+                {
+                    ["playerPoints", "goaliePoints", "teamPoints", "playersRemaining", "goaliesRemaining"].forEach(function(key) {
+                        if (Number.isFinite(Number(frozen[key])))
+                        {
+                            row[key] = Number(frozen[key]);
+                        }
+                    });
+
+                    row.total = row.playerPoints + row.goaliePoints + row.teamPoints;
+                }
+            });
+        }
+        catch (err)
+        {
+            console.warn("Saved standings problem:", err);
+        }
+    }
+
     // the stat lines of the players that were actually picked (what Save Stats keeps)
     const picked = new Map();
 
@@ -106,4 +151,55 @@ export async function loadStandings(leagueId, league, options)
     });
 
     return { rows: rankRows(rows), updated: updated, hasStats: lookup.count > 0, saved: saved, players: Array.from(picked.values()) };
+}
+
+// the final standings saved by Save Stats, as rows for the standings table. null when there is no saved copy.
+async function loadFrozenStandings(leagueId)
+{
+    try
+    {
+        const snap = await getDoc(doc(db, "leagues", leagueId, "final", "standings"));
+
+        if (!snap.exists() || !Array.isArray(snap.data().standings) || snap.data().standings.length === 0)
+        {
+            return null;
+        }
+
+        const names = {};
+        const suffixes = {};
+
+        try
+        {
+            const teams = await getDocs(collection(db, "teams"));
+            teams.forEach(function(teamDoc) {
+                names[teamDoc.id] = String(teamDoc.data().teamName || "");
+                suffixes[teamDoc.id] = String(teamDoc.data().suffix || "");
+            });
+        }
+        catch (err)
+        {
+            // the names saved with the standings are used instead
+        }
+
+        const num = function(value) { return Number(value) || 0; };
+
+        const rows = snap.data().standings.map(function(saved) {
+            return {
+                uid: String(saved.uid), name: names[saved.uid] || String(saved.name || "(unknown team)"), suffix: suffixes[saved.uid] || "",
+                place: num(saved.place), total: num(saved.total), playerPoints: num(saved.playerPoints), goaliePoints: num(saved.goaliePoints),
+                teamPoints: num(saved.teamPoints), playersRemaining: num(saved.playersRemaining), goaliesRemaining: num(saved.goaliesRemaining)
+            };
+        }).sort(function(a, b) {
+            return (a.place - b.place) || a.name.localeCompare(b.name);
+        });
+
+        const when = snap.data().savedAt;
+
+        return { rows: rows, updated: when && typeof when.toDate === "function" ? when.toDate() : null, hasStats: true, saved: true, players: [] };
+    }
+    catch (err)
+    {
+        console.warn("Saved standings problem:", err);
+        return null;
+    }
 }

@@ -6,6 +6,7 @@ import { auth, onAuthStateChanged, signOut, getProfile, getPublicTeam, updateTea
 import { ACHIEVEMENTS } from "./achievements.js";
 import { loadSeasons, computeStats } from "./userStats.js";
 import { formatPoints } from "./standings.js";
+import { drawHistoryChart } from "./historyChart.js";
 import { appendSuffix, suffixOptions, suffixLabel } from "./suffixes.js";
 
 const status = document.getElementById("status");
@@ -27,6 +28,7 @@ const leaguesBody = document.getElementById("leagues-body");
 const statsBox = document.getElementById("stats-box");
 const summaryStats = document.getElementById("summary-stats");
 const pointsStats = document.getElementById("points-stats");
+const historyChart = document.getElementById("history-chart");
 const suffixForm = document.getElementById("suffix-form");
 const suffixSelect = document.getElementById("suffix-select");
 const suffixMessage = document.getElementById("suffix-message");
@@ -180,6 +182,7 @@ async function showHistory(teamId)
     })));
 
     statsBox.classList.remove("hidden");
+    drawHistoryChart(historyChart, seasons);
 
     return seasons;
 }
