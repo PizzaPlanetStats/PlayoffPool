@@ -4,6 +4,7 @@
 import { db } from "./firebase.js";
 import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { leaguePhase } from "./phases.js";
+import { normalizeCodes, cleanWinners } from "./bracketLogic.js";
 
 // one item per ended league this team was in, newest league first:
 // [{ leagueId, leagueName, year, place, total, playerPoints, goaliePoints, teamPoints }]
@@ -63,4 +64,83 @@ export function computeStats(seasons)
         bestFinish: Math.min.apply(null, places),
         kinds: kinds
     };
+}
+
+// The players, goalies and NHL teams a team has picked most, from its registrations in every league that has started
+// (before that, other people can't read the picks). Each list is [{ name, count }], biggest first, top 3.
+// Teams are counted by how many series they were picked to win across the bracket.
+export async function loadFavourites(teamId)
+{
+    const leagues = await getDocs(collection(db, "leagues"));
+
+    const started = leagues.docs.filter(function(leagueDoc) {
+        const phase = leaguePhase(leagueDoc.data());
+        return phase === "ongoing" || phase === "ended";
+    });
+
+    const players = {};
+    const goalies = {};
+    const teams = {};
+
+    function add(table, key, name)
+    {
+        const item = table[key] || (table[key] = { name: name, count: 0 });
+        item.count++;
+    }
+
+    await Promise.all(started.map(async function(leagueDoc) {
+        const snap = await getDoc(doc(db, "leagues", leagueDoc.id, "entries", teamId));
+
+        if (!snap.exists())
+        {
+            return;
+        }
+
+        const league = leagueDoc.data();
+        const entry = snap.data();
+        const groups = Array.isArray(league.playerGroups) ? league.playerGroups : [];
+        const picks = entry.players || {};
+
+        groups.forEach(function(group) {
+            const pick = picks[group.id];
+
+            if (!pick || !pick.name)
+            {
+                return;
+            }
+
+            let goalie = pick.position === "G";
+
+            if (pick.type !== "other")
+            {
+                const listed = (group.players || []).find(function(player) {
+                    return String(player.id || "") === String(pick.id || "") || player.name === pick.name;
+                });
+
+                goalie = Boolean(listed) && listed.position === "G";
+            }
+
+            const key = pick.id ? "id" + pick.id : String(pick.name).toLowerCase();
+            add(goalie ? goalies : players, key, String(pick.name));
+        });
+
+        const codes = normalizeCodes(league.playoffTeams);
+        const winners = entry.bracket ? cleanWinners(codes, entry.bracket.winners) : [];
+
+        winners.forEach(function(code) {
+            if (code !== "")
+            {
+                add(teams, code, code);
+            }
+        });
+    }));
+
+    function top(table)
+    {
+        return Object.values(table).sort(function(a, b) {
+            return (b.count - a.count) || a.name.localeCompare(b.name);
+        }).slice(0, 3);
+    }
+
+    return { players: top(players), goalies: top(goalies), teams: top(teams) };
 }

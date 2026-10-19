@@ -4,7 +4,7 @@
 
 import { auth, onAuthStateChanged, signOut, getProfile, getPublicTeam, updateTeamName, validTeamName, changePassword, updateSuffix } from "./team.js";
 import { ACHIEVEMENTS } from "./achievements.js";
-import { loadSeasons, computeStats } from "./userStats.js";
+import { loadSeasons, computeStats, loadFavourites } from "./userStats.js";
 import { formatPoints } from "./standings.js";
 import { drawHistoryChart } from "./historyChart.js";
 import { appendSuffix, suffixOptions, suffixLabel } from "./suffixes.js";
@@ -29,6 +29,8 @@ const statsBox = document.getElementById("stats-box");
 const summaryStats = document.getElementById("summary-stats");
 const pointsStats = document.getElementById("points-stats");
 const historyChart = document.getElementById("history-chart");
+const favouritesBox = document.getElementById("favourites-box");
+const favouritesArea = document.getElementById("favourites");
 const suffixForm = document.getElementById("suffix-form");
 const suffixSelect = document.getElementById("suffix-select");
 const suffixMessage = document.getElementById("suffix-message");
@@ -187,6 +189,45 @@ async function showHistory(teamId)
     return seasons;
 }
 
+// the Favourites box: the players, goalies and teams this team picks most across leagues
+async function showFavourites(teamId)
+{
+    let favourites;
+
+    try
+    {
+        favourites = await loadFavourites(teamId);
+    }
+    catch (err)
+    {
+        return;
+    }
+
+    const lists = [
+        ["Player", "Picks", favourites.players],
+        ["Goalie", "Picks", favourites.goalies],
+        ["Team", "Round Wins", favourites.teams]
+    ];
+
+    if (lists.every(function(list) { return list[2].length === 0; }))
+    {
+        return;
+    }
+
+    lists.forEach(function(list) {
+        if (list[2].length === 0)
+        {
+            return;
+        }
+
+        favouritesArea.appendChild(buildTable([list[0], list[1]], list[2].map(function(item) {
+            return [item.name, String(item.count)];
+        })));
+    });
+
+    favouritesBox.classList.remove("hidden");
+}
+
 // the team name with its suffix after it
 function showName()
 {
@@ -325,6 +366,7 @@ onAuthStateChanged(auth, async function(user) {
 
     status.classList.add("hidden");
     profileArea.classList.remove("hidden");
+    showFavourites(teamId);
     showHistory(teamId).then(function(seasons) {
         if (isOwner)
         {
