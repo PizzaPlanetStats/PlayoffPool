@@ -1290,3 +1290,20 @@ table.stats a:not(.btn):focus
 /* edit team: the Auto / Manual column */
 #team-form table.stats th:last-child,
 #team-form table.stats td.num { text-align: center; width: 90px; }
+
+/* home page: centered Year, Status and team number columns */
+#leagues-table th:nth-child(n+2),
+#leagues-table td:nth-child(n+2),
+#past-table th:nth-child(3),
+#past-table td:nth-child(3),
+#teams-table th:nth-child(n+2),
+#teams-table td:nth-child(n+2)
+{
+    text-align: center;
+}
+
+/* suffixes: centered on the team name's line instead of sitting on its baseline */
+.suffix
+{
+  vertical-align: middle;
+}
