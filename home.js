@@ -23,6 +23,7 @@ const teamsTable = document.getElementById("teams-table");
 const teamsBody = document.getElementById("teams-body");
 
 let teams = null;
+const teamStats = {};   // uid -> { first (earliest league played), wins } from the saved final standings of ended leagues
 let currentUser = null;
 
 onAuthStateChanged(auth, function(user) {
@@ -87,6 +88,12 @@ async function loadLeagues()
     if (pastTable)
     {
         await attachWinners(past);
+
+        if (teams)
+        {
+            renderTeams();
+        }
+
         renderLeagueTable(past, pastStatus, pastTable, pastBody, "No past leagues found.", false, true);
     }
 }
@@ -119,6 +126,20 @@ async function attachWinners(past)
         {
             const snap = await getDoc(doc(db, "leagues", league.id, "final", "standings"));
             const rows = snap.exists() ? (snap.data().standings || []) : [];
+
+            rows.forEach(function(row) {
+                const stat = teamStats[row.uid] || (teamStats[row.uid] = { first: null, wins: 0 });
+
+                if (!stat.first || league.year < stat.first.year)
+                {
+                    stat.first = league;
+                }
+
+                if (Number(row.place) === 1)
+                {
+                    stat.wins++;
+                }
+            });
 
             league.winners = rows.filter(function(row) { return Number(row.place) === 1; }).map(function(row) {
                 return { uid: String(row.uid), name: names[row.uid] || String(row.name || "(unknown team)"), suffix: suffixes[row.uid] || "" };
@@ -159,6 +180,7 @@ function renderLeagueTable(leagues, status, table, body, emptyText, showStatus, 
 
         const yearCell = document.createElement("td");
         yearCell.textContent = league.year;
+        yearCell.style.textAlign = "center";
 
         row.append(nameCell, yearCell);
 
@@ -166,6 +188,7 @@ function renderLeagueTable(leagues, status, table, body, emptyText, showStatus, 
         {
             const statusCell = document.createElement("td");
             statusCell.textContent = phaseInfo(league.phase).label;
+            statusCell.style.textAlign = "center";
             row.appendChild(statusCell);
         }
 
@@ -220,7 +243,8 @@ async function loadTeams()
             return {
                 id: teamDoc.id,
                 name: String(teamDoc.data().teamName || "(no name)"),
-                suffix: String(teamDoc.data().suffix || "")
+                suffix: String(teamDoc.data().suffix || ""),
+                achievements: (teamDoc.data().achievements || []).length
             };
         });
     }
@@ -251,6 +275,25 @@ function renderTeams()
 
     teamsStatus.classList.add("hidden");
     teamsTable.classList.remove("hidden");
+
+    // earliest inaugural year first, teams with no league (N/A) last, then by name
+    function firstYear(team)
+    {
+        const stat = teamStats[team.id];
+        return stat && stat.first ? Number(stat.first.year) : Infinity;
+    }
+
+    teams.sort(function(a, b) {
+        const ay = firstYear(a);
+        const by = firstYear(b);
+
+        if (ay !== by)
+        {
+            return ay < by ? -1 : 1;
+        }
+
+        return a.name.localeCompare(b.name);
+    });
 
     teams.forEach(function(team) {
         const row = document.createElement("tr");
@@ -286,6 +329,33 @@ function renderTeams()
         teamRow.appendChild(nameText);
 
         row.append(nameCell);
+
+        const stat = teamStats[team.id] || { first: null, wins: 0 };
+
+        const firstCell = document.createElement("td");
+        firstCell.style.textAlign = "center";
+
+        if (stat.first)
+        {
+            const firstLink = document.createElement("a");
+            firstLink.href = "league.html?id=" + encodeURIComponent(stat.first.id);
+            firstLink.textContent = stat.first.year;
+            firstCell.appendChild(firstLink);
+        }
+        else
+        {
+            firstCell.textContent = "N/A";
+        }
+
+        row.appendChild(firstCell);
+
+        [stat.wins, team.achievements].forEach(function(value) {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            cell.style.textAlign = "center";
+            row.appendChild(cell);
+        });
+
         teamsBody.appendChild(row);
     });
 }

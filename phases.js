@@ -20,7 +20,7 @@ export const PHASES = [
   },
   {
     key: "ongoing",
-    label: "Ongoing",
+    label: "Live",
     choice: "Registration closed, league ongoing",
     message: "Registration is closed. The league is underway."
   },

@@ -104,7 +104,7 @@ export function drawHistoryChart(container, seasons)
         tooltip.textContent = "";
 
         const title = document.createElement("strong");
-        title.textContent = season.leagueName + (season.place ? " - place " + season.place : "");
+        title.textContent = season.leagueName;
         tooltip.appendChild(title);
 
         SERIES.forEach(function(series) {

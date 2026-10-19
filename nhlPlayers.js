@@ -107,6 +107,23 @@ export function findPlayerByName(players, name)
     });
 }
 
+// every player with exactly this name (two players can share one)
+export function findPlayersByName(players, name)
+{
+    const norm = normalizeName(name);
+    const seen = new Set();
+
+    return players.filter(function(player) {
+        if (player.norm !== norm || seen.has(player.id))
+        {
+            return false;
+        }
+
+        seen.add(player.id);
+        return true;
+    });
+}
+
 // A player's playoff totals for one year (the year the playoffs end in, e.g. 2026 for the 2025-26 season).
 // Returns the NHL's playoff season row for that year, or null if the player has none (didn't play).
 export async function loadPlayoffTotals(playerId, year)
@@ -131,6 +148,24 @@ export async function loadPlayoffTotals(playerId, year)
     });
 
     return rows.length > 0 ? rows[0] : null;
+}
+
+// A player's regular season points for one year (0 if they have none)
+export async function loadRegularSeasonPoints(playerId, year)
+{
+    const response = await fetch(NHL_PROXY + "/web/v1/player/" + encodeURIComponent(playerId) + "/landing");
+
+    if (!response.ok)
+    {
+        throw new Error("Could not load stats (" + response.status + ").");
+    }
+
+    const body = await response.json();
+    const season = Number(year - 1) * 10000 + Number(year);
+
+    return (body.seasonTotals || [])
+        .filter(function(row) { return row.leagueAbbrev === "NHL" && row.gameTypeId === 2 && row.season === season; })
+        .reduce(function(sum, row) { return sum + (row.points || 0); }, 0);
 }
 
 // every NHL player a name can be checked against: the rosters of the league's season first, then today's rosters

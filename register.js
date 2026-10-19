@@ -23,7 +23,7 @@ import {
 import { renderBracket } from "./bracket.js";
 import { MATCH_COUNT, normalizeCodes, cleanWinners } from "./bracketLogic.js";
 import { leaguePhase } from "./phases.js";
-import { loadKnownPlayers, findPlayerByName, normalizeName } from "./nhlPlayers.js";
+import { loadKnownPlayers, findPlayersByName, loadRegularSeasonPoints, normalizeName } from "./nhlPlayers.js";
 
 const status = document.getElementById("status");
 const registerArea = document.getElementById("register-area");
@@ -475,6 +475,25 @@ function collectPicks()
 // The "Other" players are checked against the NHL's rosters. Real ones get their NHL id, team and position saved with the pick
 // (that is how the team page knows which team they play for). Anyone who isn't found is only a warning, never a block.
 // Returns { unknown: [names], failed: true if the NHL list couldn't be loaded }.
+// of players who share a name, the one with the most regular season points in this league's season (the first one if the stats can't be loaded)
+async function mostPoints(matches)
+{
+    const totals = await Promise.all(matches.map(function(player) {
+        return loadRegularSeasonPoints(player.id, leagueYear).catch(function() { return 0; });
+    }));
+
+    let best = 0;
+
+    totals.forEach(function(points, index) {
+        if (points > totals[best])
+        {
+            best = index;
+        }
+    });
+
+    return matches[best];
+}
+
 async function checkCustomPlayers(picks)
 {
     const players = await loadKnownPlayers(leagueYear);
@@ -485,15 +504,23 @@ async function checkCustomPlayers(picks)
         return { unknown: [], failed: true };
     }
 
-    Object.keys(picks).forEach(function(groupId) {
+    for (const groupId of Object.keys(picks))
+    {
         const pick = picks[groupId];
 
         if (pick.type !== "other")
         {
-            return;
+            continue;
         }
 
-        const found = findPlayerByName(players, pick.name);
+        const matches = findPlayersByName(players, pick.name);
+        let found = matches[0];
+
+        // two NHL players share this name, so take the one with more regular season points that year
+        if (matches.length > 1)
+        {
+            found = await mostPoints(matches);
+        }
 
         if (found)
         {
@@ -503,7 +530,7 @@ async function checkCustomPlayers(picks)
         {
             unknown.push(pick.name);
         }
-    });
+    }
 
     return { unknown: unknown, failed: false };
 }
