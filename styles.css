@@ -1307,3 +1307,11 @@ table.stats a:not(.btn):focus
 {
   vertical-align: middle;
 }
+
+/* league home standings: gold, silver and bronze for the top 3 (also keeps the sticky team column on mobile the same colour) */
+#standings table.standings tr.place-1 td,
+#standings table.standings tr.place-1 td:first-child { background: #f7e08c; }
+#standings table.standings tr.place-2 td,
+#standings table.standings tr.place-2 td:first-child { background: #dfe3e8; }
+#standings table.standings tr.place-3 td,
+#standings table.standings tr.place-3 td:first-child { background: #e9bd91; }

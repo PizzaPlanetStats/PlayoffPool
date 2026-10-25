@@ -215,7 +215,7 @@ function startStandings(league)
     {
         standingsStatus.textContent = "Loading the standings...";
 
-        loadStandings(leagueId, league).then(function(result) {
+        loadStandings(leagueId, league, { summary: true }).then(function(result) {
             standingsRows = result.rows;
             drawStandings();
         }).catch(function() {
@@ -348,6 +348,11 @@ function drawStandings()
     standingsRows.forEach(function(row) {
         const tr = document.createElement("tr");
         const nameCell = document.createElement("td");
+
+        if (row.place >= 1 && row.place <= 3)
+        {
+            tr.className = "place-" + row.place;
+        }
 
         const teamRow = document.createElement("div");
         teamRow.className = "team-row";

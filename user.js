@@ -4,7 +4,7 @@
 
 import { auth, onAuthStateChanged, signOut, getProfile, getPublicTeam, updateTeamName, validTeamName, changePassword, updateSuffix } from "./team.js";
 import { ACHIEVEMENTS } from "./achievements.js";
-import { loadSeasons, computeStats, loadFavourites } from "./userStats.js";
+import { loadSeasons, computeStats, loadFavourites, loadBestPicks } from "./userStats.js";
 import { formatPoints } from "./standings.js";
 import { drawHistoryChart } from "./historyChart.js";
 import { appendSuffix, suffixOptions, suffixLabel } from "./suffixes.js";
@@ -31,6 +31,8 @@ const pointsStats = document.getElementById("points-stats");
 const historyChart = document.getElementById("history-chart");
 const favouritesBox = document.getElementById("favourites-box");
 const favouritesArea = document.getElementById("favourites");
+const bestBox = document.getElementById("best-box");
+const bestArea = document.getElementById("best-picks");
 const suffixForm = document.getElementById("suffix-form");
 const suffixSelect = document.getElementById("suffix-select");
 const suffixMessage = document.getElementById("suffix-message");
@@ -204,9 +206,9 @@ async function showFavourites(teamId)
     }
 
     const lists = [
-        ["Player", "Picks", favourites.players],
-        ["Goalie", "Picks", favourites.goalies],
-        ["Team", "Round Wins", favourites.teams]
+        ["Player", "Times Picked", favourites.players],
+        ["Goalie", "Times Picked", favourites.goalies],
+        ["Team", "Predicted Round Wins", favourites.teams]
     ];
 
     if (lists.every(function(list) { return list[2].length === 0; }))
@@ -226,6 +228,39 @@ async function showFavourites(teamId)
     });
 
     favouritesBox.classList.remove("hidden");
+}
+
+// the Best Picks box: the picks that earned this team the most points in one league
+async function showBestPicks(teamId)
+{
+    let best;
+
+    try
+    {
+        best = await loadBestPicks(teamId);
+    }
+    catch (err)
+    {
+        return;
+    }
+
+    [["Player", best.players], ["Goalie", best.goalies]].forEach(function(list) {
+        if (list[1].length === 0)
+        {
+            return;
+        }
+
+        bestArea.appendChild(buildTable([list[0], "Year", "Points"], list[1].map(function(item) {
+            return [item.name, String(item.year), formatPoints(item.points)];
+        })));
+    });
+
+    if (!bestArea.firstChild)
+    {
+        return;
+    }
+
+    bestBox.classList.remove("hidden");
 }
 
 // the team name with its suffix after it
@@ -367,6 +402,7 @@ onAuthStateChanged(auth, async function(user) {
     status.classList.add("hidden");
     profileArea.classList.remove("hidden");
     showFavourites(teamId);
+    showBestPicks(teamId);
     showHistory(teamId).then(function(seasons) {
         if (isOwner)
         {

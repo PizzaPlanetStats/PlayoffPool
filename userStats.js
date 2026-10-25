@@ -5,6 +5,7 @@ import { db } from "./firebase.js";
 import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { leaguePhase } from "./phases.js";
 import { normalizeCodes, cleanWinners } from "./bracketLogic.js";
+import { makeStatsLookup, describePicks, actualRounds } from "./standings.js";
 
 // one item per ended league this team was in, newest league first:
 // [{ leagueId, leagueName, year, place, total, playerPoints, goaliePoints, teamPoints }]
@@ -143,4 +144,43 @@ export async function loadFavourites(teamId)
     }
 
     return { players: top(players), goalies: top(goalies), teams: top(teams) };
+}
+
+// The picks that earned this team the most points in a single league, from the saved final stats of ended leagues.
+// Returns { players, goalies }, each the top 3 as [{ name, year, points }], best first.
+export async function loadBestPicks(teamId)
+{
+    const leagues = await getDocs(collection(db, "leagues"));
+
+    const ended = leagues.docs.filter(function(leagueDoc) {
+        return leaguePhase(leagueDoc.data()) === "ended";
+    });
+
+    const found = await Promise.all(ended.map(async function(leagueDoc) {
+        const entrySnap = await getDoc(doc(db, "leagues", leagueDoc.id, "entries", teamId));
+        const statsSnap = await getDoc(doc(db, "leagues", leagueDoc.id, "final", "stats"));
+
+        if (!entrySnap.exists() || !statsSnap.exists())
+        {
+            return [];
+        }
+
+        const league = leagueDoc.data();
+        const lookup = makeStatsLookup(statsSnap.data().players);
+
+        return describePicks(league, entrySnap.data(), actualRounds(league), lookup, null)
+            .filter(function(pick) { return pick.name !== "" && pick.points > 0; })
+            .map(function(pick) {
+                return { name: pick.name, year: Number(league.year) || 0, points: pick.points, goalie: pick.goalie };
+            });
+    }));
+
+    const all = found.flat().sort(function(a, b) {
+        return (b.points - a.points) || (b.year - a.year) || a.name.localeCompare(b.name);
+    });
+
+    return {
+        players: all.filter(function(pick) { return !pick.goalie; }).slice(0, 3),
+        goalies: all.filter(function(pick) { return pick.goalie; }).slice(0, 3)
+    };
 }
