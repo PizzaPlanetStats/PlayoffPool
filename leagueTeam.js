@@ -221,9 +221,12 @@ async function show(user)
     bracketTotal.textContent = "Team points: " + formatPoints(row.teamPoints);
 
     // points the admin added or removed (for example the 2020 qualifier and round robin)
-    if (row.adjustment !== 0 || Number(league.year) === 2020)
+    const year = Number(league.year);
+
+    if (row.adjustment !== 0 || year === 2020 || year === 2025)
     {
-        adjustTotal.textContent = "Qualifier and Round Robin points: " + formatPoints(row.adjustment);
+        const adjustLabel = year === 2025 ? "99% Confidence Points: " : "Qualifier and Round Robin points: ";
+        adjustTotal.textContent = adjustLabel + formatPoints(row.adjustment);
         adjustTotal.classList.remove("hidden");
     }
 
