@@ -73,17 +73,55 @@ export function playerListDate()
     return isNaN(date.getTime()) ? "" : date.toLocaleDateString();
 }
 
-// players whose name contains every word that was typed, best matches first
+// Splits what was typed into a name and an optional team: "Matthews(TOR)" or "Auston Matthews (TOR)" -> { name: "Matthews", team: "TOR" }.
+// Anything in () or [] is dropped from the name, and a 2 to 4 letter one is read as the team (handy when pasting from a spreadsheet).
+export function parseSearch(text)
+{
+    let team = "";
+
+    const name = String(text)
+        .replace(/[(\[]([^)\]]*)[)\]]/g, function(whole, inside) {
+            const code = inside.trim();
+
+            if (team === "" && /^[A-Za-z]{2,4}$/.test(code))
+            {
+                team = code.toUpperCase();
+            }
+
+            return " ";
+        })
+        .replace(/\s+-\s*[A-Za-z]{1,2}\s*$/, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    return { name: name, team: team };
+}
+
+// when a team was given, keep only that team's players, unless nobody matches (the player may have been traded since)
+function preferTeam(matches, team)
+{
+    if (team === "")
+    {
+        return matches;
+    }
+
+    const onTeam = matches.filter(function(player) { return player.team.toUpperCase() === team; });
+
+    return onTeam.length > 0 ? onTeam : matches;
+}
+
+// players whose name contains every word that was typed, best matches first. "Matthews (TOR)" only looks at Toronto's players.
 export function searchPlayers(players, query, limit)
 {
-    const words = normalizeName(query).split(" ").filter(Boolean);
+    const parsed = parseSearch(query);
+    const words = normalizeName(parsed.name).split(" ").filter(Boolean);
 
     if (words.length === 0)
     {
         return [];
     }
 
-    return players
+    const matches = players
         .filter(function(player) {
             return words.every(function(word) {
                 return player.norm.includes(word);
@@ -93,27 +131,29 @@ export function searchPlayers(players, query, limit)
             const aStarts = a.norm.startsWith(words[0]) ? 0 : 1;
             const bStarts = b.norm.startsWith(words[0]) ? 0 : 1;
             return (aStarts - bStarts) || a.norm.localeCompare(b.norm);
-        })
-        .slice(0, limit || 10);
+        });
+
+    return preferTeam(matches, parsed.team).slice(0, limit || 10);
 }
 
 // the player with exactly this name, or undefined
 export function findPlayerByName(players, name)
 {
-    const norm = normalizeName(name);
+    const norm = normalizeName(parseSearch(name).name);
 
     return players.find(function(player) {
         return player.norm === norm;
     });
 }
 
-// every player with exactly this name (two players can share one)
+// every player with exactly this name (two players can share one). A team in () narrows it down: "Elias Pettersson (VAN)"
 export function findPlayersByName(players, name)
 {
-    const norm = normalizeName(name);
+    const parsed = parseSearch(name);
+    const norm = normalizeName(parsed.name);
     const seen = new Set();
 
-    return players.filter(function(player) {
+    const matches = players.filter(function(player) {
         if (player.norm !== norm || seen.has(player.id))
         {
             return false;
@@ -122,6 +162,8 @@ export function findPlayersByName(players, name)
         seen.add(player.id);
         return true;
     });
+
+    return preferTeam(matches, parsed.team);
 }
 
 // A player's playoff totals for one year (the year the playoffs end in, e.g. 2026 for the 2025-26 season).

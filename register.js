@@ -23,7 +23,7 @@ import {
 import { renderBracket } from "./bracket.js";
 import { MATCH_COUNT, normalizeCodes, cleanWinners } from "./bracketLogic.js";
 import { leaguePhase } from "./phases.js";
-import { loadKnownPlayers, findPlayersByName, loadRegularSeasonPoints, normalizeName } from "./nhlPlayers.js";
+import { loadKnownPlayers, findPlayersByName, loadRegularSeasonPoints, normalizeName, parseSearch, searchPlayers } from "./nhlPlayers.js";
 
 const status = document.getElementById("status");
 const registerArea = document.getElementById("register-area");
@@ -287,6 +287,41 @@ function sharesName(player)
     return count > 1;
 }
 
+// every NHL player the Other box can suggest (not the players who are already a choice in the league). Loaded once, [] if the NHL list isn't available.
+let suggestionPromise = null;
+
+function suggestionPool()
+{
+    if (!suggestionPromise)
+    {
+        suggestionPromise = loadKnownPlayers(leagueYear).then(function(all) {
+            const optionIds = new Set();
+            const optionNames = new Set();
+
+            groups.forEach(function(group) {
+                group.players.forEach(function(player) {
+                    optionIds.add(String(player.id || ""));
+                    optionNames.add(normalizeName(player.name));
+                });
+            });
+
+            const seen = new Set();
+
+            return all.filter(function(player) {
+                if (seen.has(player.id) || optionIds.has(player.id) || optionNames.has(player.norm))
+                {
+                    return false;
+                }
+
+                seen.add(player.id);
+                return true;
+            });
+        });
+    }
+
+    return suggestionPromise;
+}
+
 // one box per group with a radio button for each player, and an Other box if the group has one
 function buildGroups(entry)
 {
@@ -321,6 +356,7 @@ function buildGroups(entry)
 
         let otherRadio = null;
         let otherInput = null;
+        const selection = { group: group, radios: radios, otherRadio: null, otherInput: null, card: card, chosen: null };
 
         if (group.allowOther)
         {
@@ -339,16 +375,45 @@ function buildGroups(entry)
             otherInput.autocomplete = "off";
             otherInput.setAttribute("aria-label", "Other player for " + group.name);
 
-            // typing in the box picks Other
-            otherInput.addEventListener("input", function() {
+            // the NHL players that match what is typed, to click on (the team can be typed in () like "Matthews (TOR)")
+            const results = document.createElement("div");
+            results.className = "search-results";
+            let latest = 0;
+
+            otherInput.addEventListener("input", async function() {
                 otherRadio.checked = true;
+                selection.chosen = null;
+                results.textContent = "";
+
+                const ticket = ++latest;
+                const players = await suggestionPool();
+
+                if (ticket !== latest || normalizeName(parseSearch(otherInput.value).name).length < 2)
+                {
+                    return;
+                }
+
+                searchPlayers(players, otherInput.value, 8).forEach(function(player) {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.textContent = player.name + (player.team ? " (" + player.team + ")" : "") + (player.position ? " - " + player.position : "");
+                    button.addEventListener("click", function() {
+                        selection.chosen = player;
+                        otherInput.value = player.name + (player.team ? " (" + player.team + ")" : "");
+                        results.textContent = "";
+                    });
+                    results.appendChild(button);
+                });
             });
 
             label.append(otherRadio, "Other: ", otherInput);
             card.appendChild(label);
+            card.appendChild(results);
         }
 
-        selections.push({ group: group, radios: radios, otherRadio: otherRadio, otherInput: otherInput, card: card });
+        selection.otherRadio = otherRadio;
+        selection.otherInput = otherInput;
+        selections.push(selection);
         groupsBox.appendChild(card);
 
         // fill in the saved pick when editing a registration
@@ -369,6 +434,11 @@ function buildGroups(entry)
         {
             otherRadio.checked = true;
             otherInput.value = String(saved.name || "");
+
+            if (saved.id)
+            {
+                selection.chosen = { id: String(saved.id), name: String(saved.name || ""), team: String(saved.team || ""), position: String(saved.position || "") };
+            }
         }
     });
 }
@@ -419,8 +489,10 @@ function collectPicks()
         }
 
         // an Other player
-        const name = selection.otherInput.value.trim().replace(/\s+/g, " ");
+        const parsed = parseSearch(selection.otherInput.value);
+        const name = parsed.name;
         const norm = normalizeName(name);
+        const picked = selection.chosen && normalizeName(selection.chosen.name) === norm ? selection.chosen : null;
 
         if (norm === "")
         {
@@ -452,8 +524,17 @@ function collectPicks()
             continue;
         }
 
-        others.push({ name: name, norm: norm, card: selection.card });
-        picks[group.id] = { type: "other", name: name };
+        others.push({ name: name, norm: norm, card: selection.card, resolved: picked !== null });
+
+        if (picked)
+        {
+            // clicked from the suggestions, so the player is known
+            picks[group.id] = { type: "other", name: picked.name, id: picked.id, team: picked.team, position: picked.position };
+        }
+        else
+        {
+            picks[group.id] = { type: "other", name: name, hint: parsed.team };
+        }
     }
 
     // the same custom player can't be used in two groups either
@@ -469,7 +550,10 @@ function collectPicks()
         seen.add(other.norm);
     }
 
-    return { picks: picks, customNames: others.map(function(other) { return other.name; }) };
+    return {
+        picks: picks,
+        customNames: others.filter(function(other) { return !other.resolved; }).map(function(other) { return other.name; })
+    };
 }
 
 // The "Other" players are checked against the NHL's rosters. Real ones get their NHL id, team and position saved with the pick
@@ -501,6 +585,13 @@ async function checkCustomPlayers(picks)
 
     if (players.length === 0)
     {
+        Object.keys(picks).forEach(function(groupId) {
+            if (picks[groupId].type === "other")
+            {
+                picks[groupId] = { type: "other", name: picks[groupId].name };
+            }
+        });
+
         return { unknown: [], failed: true };
     }
 
@@ -508,12 +599,12 @@ async function checkCustomPlayers(picks)
     {
         const pick = picks[groupId];
 
-        if (pick.type !== "other")
+        if (pick.type !== "other" || pick.id)
         {
             continue;
         }
 
-        const matches = findPlayersByName(players, pick.name);
+        const matches = findPlayersByName(players, pick.name + (pick.hint ? " (" + pick.hint + ")" : ""));
         let found = matches[0];
 
         // two NHL players share this name, so take the one with more regular season points that year
@@ -528,6 +619,7 @@ async function checkCustomPlayers(picks)
         }
         else
         {
+            picks[groupId] = { type: "other", name: pick.name };
             unknown.push(pick.name);
         }
     }
