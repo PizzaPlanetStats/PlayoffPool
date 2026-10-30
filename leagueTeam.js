@@ -225,7 +225,7 @@ async function show(user)
 
     if (row.adjustment !== 0 || year === 2020 || year === 2025)
     {
-        const adjustLabel = year === 2025 ? "99% Confidence Points: " : "Qualifier and Round Robin points: ";
+        const adjustLabel = year === 2025 ? "99% Confidence Points: " : year === 2020 ? "Qualifier and Round Robin points: " : "Points Adjustment: ";
         adjustTotal.textContent = adjustLabel + formatPoints(row.adjustment);
         adjustTotal.classList.remove("hidden");
     }

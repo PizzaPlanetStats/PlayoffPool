@@ -12,6 +12,7 @@ import { SKATER_STATS, GOALIE_STATS } from "./stats.js";
 import { renderBracket } from "./bracket.js";
 import { phaseInfo, leaguePhase } from "./phases.js";
 import { exportLeague } from "./exportLeague.js";
+import { pickedPlayers, makePickBoard } from "./leaguePicks.js";
 import { PREDICTION_POINTS, ONE_ROUND_OFF_RULE } from "./predictions.js";
 
 const status = document.getElementById("status");
@@ -220,6 +221,7 @@ function startStandings(league)
             standingsRows = result.rows;
             drawStandings();
             setUpExport(league, result);
+            showPickedPlayers(league, result);
         }).catch(function() {
             standingsStatus.textContent = "Could not load the standings. Try again later.";
         });
@@ -243,6 +245,37 @@ function startStandings(league)
             showMyPicksButton(user);
         }
     });
+}
+
+// every picked player and goalie with the points they have so far. A league that has ended with saved standings only loaded the totals
+// for the table above, so the picks are loaded separately (one extra read of the saved copy).
+async function showPickedPlayers(league, result)
+{
+    let rows = result.rows;
+
+    try
+    {
+        if (rows.length === 0)
+        {
+            return;
+        }
+
+        if (!rows[0].picks)
+        {
+            rows = (await loadStandings(leagueId, league)).rows;
+        }
+
+        const picked = pickedPlayers(rows);
+        const area = document.getElementById("picked-boards");
+
+        area.textContent = "";
+        area.append(makePickBoard("Players", "Player", picked.players), makePickBoard("Goalies", "Goalie", picked.goalies));
+        document.getElementById("picked-box").classList.remove("hidden");
+    }
+    catch (err)
+    {
+        console.warn("Picked players problem:", err);
+    }
 }
 
 // once the league has ended and its stats are saved, anyone can download them as an Excel file
