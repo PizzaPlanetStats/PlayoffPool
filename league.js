@@ -11,6 +11,7 @@ import { appendSuffix } from "./suffixes.js";
 import { SKATER_STATS, GOALIE_STATS } from "./stats.js";
 import { renderBracket } from "./bracket.js";
 import { phaseInfo, leaguePhase } from "./phases.js";
+import { exportLeague } from "./exportLeague.js";
 import { PREDICTION_POINTS, ONE_ROUND_OFF_RULE } from "./predictions.js";
 
 const status = document.getElementById("status");
@@ -218,6 +219,7 @@ function startStandings(league)
         loadStandings(leagueId, league, { summary: true }).then(function(result) {
             standingsRows = result.rows;
             drawStandings();
+            setUpExport(league, result);
         }).catch(function() {
             standingsStatus.textContent = "Could not load the standings. Try again later.";
         });
@@ -240,6 +242,36 @@ function startStandings(league)
         {
             showMyPicksButton(user);
         }
+    });
+}
+
+// once the league has ended and its stats are saved, anyone can download them as an Excel file
+function setUpExport(league, result)
+{
+    if (phase !== "ended" || !result.saved || result.rows.length === 0)
+    {
+        return;
+    }
+
+    const area = document.getElementById("export-area");
+    const button = document.getElementById("export-button");
+    area.classList.remove("hidden");
+
+    button.addEventListener("click", async function() {
+        button.disabled = true;
+        button.textContent = "Exporting...";
+
+        try
+        {
+            await exportLeague(leagueId, league);
+            button.textContent = "Export to Excel";
+        }
+        catch (err)
+        {
+            button.textContent = "Export failed, try again";
+        }
+
+        button.disabled = false;
     });
 }
 
