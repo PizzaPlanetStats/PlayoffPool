@@ -1315,3 +1315,43 @@ table.stats a:not(.btn):focus
 #standings table.standings tr.place-2 td:first-child { background: #dfe3e8; }
 #standings table.standings tr.place-3 td,
 #standings table.standings tr.place-3 td:first-child { background: #e9bd91; }
+
+/* home page splash text, in the bottom right corner of the banner image (tilted and pulsing like Minecraft's) */
+#banner h1.has-splash { position: relative; display: inline-block; margin-bottom: 30px; }
+#banner h1.has-splash img { display: block; }
+
+#splash
+{
+  position: absolute;
+  left: 83%;
+  top: 86%;
+  width: max-content;
+  max-width: 44%;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: var(--splash-size, 18px);
+  font-weight: bold;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--gold);
+  text-shadow: 2px 2px 0 #000;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(var(--splash-angle, -28deg));
+  animation: splash-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes splash-pulse
+{
+  0%, 100% { transform: translate(-50%, -50%) rotate(var(--splash-angle, -28deg)) scale(1); }
+  50% { transform: translate(-50%, -50%) rotate(var(--splash-angle, -28deg)) scale(1.07); }
+}
+
+@media (prefers-reduced-motion: reduce)
+{
+  #splash { animation: none; }
+}
+
+@media (max-width: 600px)
+{
+  #splash { font-size: max(8px, calc(var(--splash-size, 18px) * 0.7)); left: 80%; }
+}
